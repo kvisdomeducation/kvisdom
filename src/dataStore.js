@@ -16,7 +16,7 @@ function readLocalState() {
     const demoStudent = state.users?.find(
       (user) => user.id === "demo-student" || user.email === "student@kvisdom.local" || user.displayName === "KVISdom Learner",
     );
-    const demoAdmin = state.users?.find((user) => user.id === "demo-admin" || user.email === "admin@kvisdom.local");
+    const demoAdmin = state.users?.find((user) => user.id === "demo-admin" || ["admin@local", "admin@kvisdom.local"].includes(user.email));
     let changed = false;
     if (demoStudent && demoStudent.role !== "student") {
       demoStudent.role = "student";
@@ -31,6 +31,10 @@ function readLocalState() {
     }
     if (demoAdmin && demoAdmin.role !== "admin") {
       demoAdmin.role = "admin";
+      changed = true;
+    }
+    if (demoAdmin && demoAdmin.email !== "admin@local") {
+      demoAdmin.email = "admin@local";
       changed = true;
     }
     if (demoAdmin && !demoAdmin.onboardedAt) {
@@ -61,7 +65,7 @@ function readLocalState() {
       },
       {
         id: "demo-admin",
-        email: "admin@kvisdom.local",
+        email: "admin@local",
         password: "kvisdom",
         displayName: "KVISdom Admin",
         school: "KVIS",
@@ -496,7 +500,7 @@ export const store = {
     const user = state.users.find((candidate) => candidate.id === state.currentUserId);
     if (!user) throw new Error("ต้องเข้าสู่ระบบก่อน");
     if (user.id === "demo-student" || user.email === "student@kvisdom.local" || user.displayName === "KVISdom Learner") {
-      throw new Error("บัญชี Learner สำหรับทดสอบถูกล็อกให้เป็นนักเรียน ใช้บัญชี admin@kvisdom.local สำหรับ Creator");
+      throw new Error("บัญชี Learner สำหรับทดสอบถูกล็อกให้เป็นนักเรียน ใช้บัญชี admin@local สำหรับ Creator");
     }
     user.role = "admin";
     writeLocalState(state);

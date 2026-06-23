@@ -937,7 +937,8 @@ function pageShell(content) {
         ? ""
         : `<header class="site-nav">
             <button class="site-logo" type="button" data-nav="/" aria-label="กลับหน้าแรก">
-              <img src="/assets/generated/kvisdom-logo.png" alt="KVISDOM" />
+              <span class="site-logo-mark" aria-hidden="true">K</span>
+              <span class="site-logo-text">KVISDOM</span>
             </button>
             <nav class="site-links" aria-label="KVISdom navigation">
               <button type="button" data-nav="/">เรียน</button>
@@ -1791,6 +1792,7 @@ function authPage(mode) {
   }
   const isSignup = mode === "signup";
   const showEmailFallback = store.mode === "local";
+  const localAdminHint = store.mode === "local" ? `<p class="helper">Demo admin: admin@local / kvisdom</p>` : "";
   return pageShell(`
     <main class="auth-layout">
       <section class="auth-card auth-panel">
@@ -1838,7 +1840,7 @@ function authPage(mode) {
                   <summary>ใช้อีเมลแทน</summary>
                   <div class="auth-divider"><span>บัญชีอีเมลสำรอง</span></div>
                   <form data-form="email-auth" class="form-stack">
-                    <label>อีเมล<input name="email" type="email" required placeholder="you@example.com" /></label>
+                    <label>อีเมล<input name="email" type="${store.mode === "local" ? "text" : "email"}" required placeholder="you@example.com" /></label>
                     <label>รหัสผ่าน<input name="password" type="password" required minlength="6" placeholder="อย่างน้อย 6 ตัวอักษร" /></label>
                     <div class="email-auth-actions">
                       <button class="primary" type="submit">เข้าสู่ระบบด้วยอีเมล</button>
@@ -1846,7 +1848,7 @@ function authPage(mode) {
                     <button class="text-link-button" type="button" data-nav="/forgot-password">ลืมรหัสผ่าน?</button>
                     <p class="email-signup-prompt">ยังไม่มีบัญชีอีเมล? <button type="button" data-nav="/signup">สร้างบัญชีด้วยอีเมล</button></p>
                   </form>
-                  ${store.mode === "local" ? `<p class="helper">Demo student: student@kvisdom.local / kvisdom</p>` : ""}
+                  ${store.mode === "local" ? `<p class="helper">Demo student: student@kvisdom.local / kvisdom</p>${localAdminHint}` : ""}
                 </details>
               `
           }
