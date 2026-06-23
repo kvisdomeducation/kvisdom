@@ -1780,13 +1780,13 @@ function authPage(mode) {
     <main class="auth-layout">
       <section class="auth-card auth-panel">
         <div class="auth-story">
-          <p class="eyebrow">KVISdom account</p>
+          <p class="eyebrow">บัญชี KVISdom</p>
           <h1>${isSignup ? "สร้างบัญชี KVISdom" : "เข้าสู่ KVISdom"}</h1>
           <p>${isSignup ? "สร้างบัญชีอีเมลสำรองสำหรับกรณีที่ใช้ Google ไม่ได้ แล้วกลับมาเก็บ EXP และ badge ได้เหมือนเดิม" : "ใช้บัญชี Google เดียวเพื่อเลือกวิชา ดูคลิป ทำควิซ เก็บ EXP และกลับมาทบทวนเส้นทางเรียนของตัวเอง"}</p>
           <div class="auth-benefits" aria-label="สิ่งที่จะได้หลังเข้าสู่ระบบ">
-            <span>Subject path</span>
-            <span>EXP history</span>
-            <span>Learning history</span>
+            <span>เส้นทางวิชา</span>
+            <span>ประวัติ EXP</span>
+            <span>ประวัติการเรียน</span>
           </div>
         </div>
         <div class="auth-form-panel">
@@ -1794,7 +1794,7 @@ function authPage(mode) {
             isSignup
               ? `
                 <div class="email-signup-card">
-                  <p class="eyebrow">Email backup</p>
+                  <p class="eyebrow">บัญชีสำรอง</p>
                   <h2>สร้างบัญชีด้วยอีเมล</h2>
                   <p>ใช้เมื่อยังไม่มี Google login หรืออยากมีทางเข้าสำรอง</p>
                   <form data-form="signup" class="form-stack">
@@ -1813,15 +1813,15 @@ function authPage(mode) {
                     <path fill="#fbbc05" d="M5.3 14.3c-.2-.7-.4-1.5-.4-2.3s.1-1.6.4-2.3v-3H1.5C.5 8.3 0 10.1 0 12s.5 3.7 1.5 5.3l3.8-3Z" />
                     <path fill="#ea4335" d="M12 4.7c1.7 0 3.3.6 4.5 1.8L19.8 3C17.8 1.1 15.1 0 12 0 7.4 0 3.5 2.1 1.5 6.7l3.8 3C6.2 6.8 8.9 4.7 12 4.7Z" />
                   </svg>
-                  Continue with Google
+                  เข้าสู่ระบบด้วย Google
                 </button>
                 <button class="guest-auth-button" type="button" data-nav="/">
                   เรียนแบบ Guest
                   <small>ดูบทเรียนได้ แต่ไม่เก็บ EXP หรือ badge</small>
                 </button>
                 <details class="email-auth-details" ${showEmailFallback ? "open" : ""}>
-                  <summary>Use email instead</summary>
-                  <div class="auth-divider"><span>email backup</span></div>
+                  <summary>ใช้อีเมลแทน</summary>
+                  <div class="auth-divider"><span>บัญชีอีเมลสำรอง</span></div>
                   <form data-form="email-auth" class="form-stack">
                     <label>อีเมล<input name="email" type="email" required placeholder="you@example.com" /></label>
                     <label>รหัสผ่าน<input name="password" type="password" required minlength="6" placeholder="อย่างน้อย 6 ตัวอักษร" /></label>
@@ -1846,13 +1846,13 @@ function forgotPasswordPage() {
     <main class="auth-layout">
       <section class="auth-card auth-panel">
         <div class="auth-story">
-          <p class="eyebrow">Password help</p>
+          <p class="eyebrow">ช่วยเหลือรหัสผ่าน</p>
           <h1>ลืมรหัสผ่าน?</h1>
           <p>กรอกอีเมลที่ใช้กับ KVISdom แล้วระบบจะส่งลิงก์สำหรับตั้งรหัสผ่านใหม่ไปให้</p>
         </div>
         <div class="auth-form-panel">
           <div class="email-signup-card">
-            <p class="eyebrow">Reset password</p>
+            <p class="eyebrow">รีเซ็ตรหัสผ่าน</p>
             <h2>ขอลิงก์ตั้งรหัสผ่านใหม่</h2>
             <p>ถ้าอีเมลนี้มีบัญชีอยู่ คุณจะได้รับอีเมลสำหรับรีเซ็ตรหัสผ่าน</p>
             <form data-form="forgot-password" class="form-stack">
@@ -1872,13 +1872,13 @@ function resetPasswordPage() {
     <main class="auth-layout">
       <section class="auth-card auth-panel">
         <div class="auth-story">
-          <p class="eyebrow">New password</p>
+          <p class="eyebrow">รหัสผ่านใหม่</p>
           <h1>ตั้งรหัสผ่านใหม่</h1>
           <p>ใส่รหัสผ่านใหม่สำหรับบัญชี KVISdom ของคุณ แล้วกลับไปเรียนต่อได้ทันที</p>
         </div>
         <div class="auth-form-panel">
           <div class="email-signup-card">
-            <p class="eyebrow">Security</p>
+            <p class="eyebrow">ความปลอดภัย</p>
             <h2>เลือกรหัสผ่านใหม่</h2>
             <p>ใช้รหัสผ่านอย่างน้อย 6 ตัวอักษร</p>
             <form data-form="reset-password" class="form-stack">
@@ -2000,27 +2000,35 @@ async function onboardingPage() {
   const recommended = getRecommendedSubject(quizzes, attempts, contentItems);
   const favoriteSubject = state.user.favoriteSubject || recommended?.subject?.id || "biology";
   const subject = getSubject(favoriteSubject);
+  const firstName = state.user.firstName || state.user.displayName?.split(/\s+/)[0] || "";
+  const lastName = state.user.lastName || state.user.displayName?.split(/\s+/).slice(1).join(" ") || "";
   return pageShell(`
     <main class="onboarding-page">
       <section class="onboarding-layout">
         <form data-form="onboarding" class="onboarding-card form-stack">
           <div>
-            <p class="eyebrow">First setup</p>
-            <h1>ตั้งค่าเส้นทางเรียนของคุณ</h1>
-            <p>ตอบสั้น ๆ เพื่อให้ KVISdom แนะนำวิชาเริ่มต้น และสร้างตัวตนสำหรับสะสม EXP</p>
+            <p class="eyebrow">ตั้งค่าครั้งแรก</p>
+            <h1>สร้างโปรไฟล์ผู้เรียน</h1>
+            <p>กรอกข้อมูลสั้น ๆ เพื่อให้ KVISdom จำเส้นทางเรียน EXP และ badge ของคุณได้</p>
           </div>
           <div class="form-grid">
-            <label>ชื่อที่แสดง
-              <input name="displayName" required value="${escapeHtml(state.user.displayName || "")}" placeholder="เช่น Ploy" />
+            <label>ชื่อ
+              <input name="firstName" required value="${escapeHtml(firstName)}" placeholder="เช่น พลอย" />
+            </label>
+            <label>นามสกุล
+              <input name="lastName" required value="${escapeHtml(lastName)}" placeholder="เช่น ใจดี" />
             </label>
             <label>โรงเรียน
               <input name="school" value="${escapeHtml(state.user.school || "")}" placeholder="เช่น KVIS" />
             </label>
+            <label>วิชาที่ชอบ
+              <select name="favoriteSubject">
+                ${SUBJECTS.map((option) => `<option value="${option.id}" ${favoriteSubject === option.id ? "selected" : ""}>${option.label}</option>`).join("")}
+              </select>
+            </label>
           </div>
-          <label>วิชาที่ชอบ
-            <select name="favoriteSubject">
-              ${SUBJECTS.map((option) => `<option value="${option.id}" ${favoriteSubject === option.id ? "selected" : ""}>${option.label}</option>`).join("")}
-            </select>
+          <label>แนะนำตัวสั้น ๆ
+            <textarea name="description" placeholder="เช่น ชอบชีววิทยา อยากฝึกควิซทุกสัปดาห์">${escapeHtml(state.user.description || "")}</textarea>
           </label>
           <label>เป้าหมายของคุณ
             <textarea name="learningGoal" placeholder="เช่น อยากเข้าใจฟิสิกส์ให้มั่นใจก่อนสอบ หรืออยากทำควิซทุกวัน">${escapeHtml(state.user.learningGoal || "")}</textarea>
@@ -2032,7 +2040,7 @@ async function onboardingPage() {
           <button class="primary" type="submit">บันทึกและเริ่มจาก${subject.label}</button>
         </form>
         <aside class="onboarding-preview" style="--subject: ${subject.accent}">
-          <p class="eyebrow">Recommended start</p>
+          <p class="eyebrow">วิชาเริ่มต้นที่แนะนำ</p>
           <h2>${subject.label}</h2>
           <p>${subject.description}</p>
           <div class="onboarding-subject-stats">
@@ -2201,7 +2209,7 @@ async function resultsPage() {
     <main>
       <section class="section-head page-head">
         <div>
-          <p class="eyebrow">EXP history</p>
+          <p class="eyebrow">ประวัติ EXP</p>
           <h1>ประวัติ EXP</h1>
         </div>
         <button type="button" data-nav="/quizzes">ทำควิซเพิ่ม</button>
@@ -2262,6 +2270,8 @@ async function profilePage() {
   const recentAttempts = attempts.slice(0, 4);
   const badges = getAchievementBadges(attempts);
   const unlockedBadges = badges.filter((badge) => badge.unlocked).length;
+  const firstName = state.user.firstName || state.user.displayName?.split(/\s+/)[0] || "";
+  const lastName = state.user.lastName || state.user.displayName?.split(/\s+/).slice(1).join(" ") || "";
 
   return pageShell(`
     <main class="profile-page">
@@ -2269,12 +2279,13 @@ async function profilePage() {
         <article class="profile-player-card">
           <div class="profile-avatar">${renderAvatar(state.user, { compact: true })}</div>
           <div>
-            <p class="eyebrow">Player status</p>
+            <p class="eyebrow">สถานะผู้เรียน</p>
             <h1>${escapeHtml(state.user.displayName || "KVISdom Learner")}</h1>
             <p>${escapeHtml(state.user.school || "KVISdom")}</p>
+            ${state.user.description ? `<p>${escapeHtml(state.user.description)}</p>` : ""}
             <div class="profile-badges">
-              <span>${state.user.role === "admin" ? "Creator" : "Learner"}</span>
-              <span>${completedSubjects || 0} subjects touched</span>
+              <span>${state.user.role === "admin" ? "Creator" : "ผู้เรียน"}</span>
+              <span>แตะแล้ว ${completedSubjects || 0} วิชา</span>
               <span>${unlockedBadges}/${badges.length} badges</span>
             </div>
           </div>
@@ -2301,17 +2312,35 @@ async function profilePage() {
       ${renderAchievementBoard(badges)}
       <section class="profile-editor-card">
         <div>
-          <p class="eyebrow">Avatar studio</p>
-          <h2>ออกแบบตัวตนของคุณ</h2>
-          <p>เลือกสีและสัญลักษณ์ให้เข้ากับสไตล์การเรียนของตัวเอง</p>
+          <p class="eyebrow">โปรไฟล์ผู้เรียน</p>
+          <h2>แก้ไขข้อมูลของคุณ</h2>
+          <p>เปลี่ยนชื่อ วิชาที่ชอบ เป้าหมาย และ avatar ได้ตลอดเวลา</p>
         </div>
         <form data-form="save-profile" class="profile-editor-form">
-          <input type="hidden" name="displayName" value="${escapeHtml(state.user.displayName || "")}" />
-          <input type="hidden" name="school" value="${escapeHtml(state.user.school || "")}" />
-          <input type="hidden" name="favoriteSubject" value="${escapeHtml(state.user.favoriteSubject || "")}" />
-          <input type="hidden" name="learningGoal" value="${escapeHtml(state.user.learningGoal || "")}" />
+          <div class="form-grid">
+            <label>ชื่อ
+              <input name="firstName" required value="${escapeHtml(firstName)}" placeholder="เช่น พลอย" />
+            </label>
+            <label>นามสกุล
+              <input name="lastName" required value="${escapeHtml(lastName)}" placeholder="เช่น ใจดี" />
+            </label>
+            <label>โรงเรียน
+              <input name="school" value="${escapeHtml(state.user.school || "")}" placeholder="เช่น KVIS" />
+            </label>
+            <label>วิชาที่ชอบ
+              <select name="favoriteSubject">
+                ${SUBJECTS.map((option) => `<option value="${option.id}" ${state.user.favoriteSubject === option.id ? "selected" : ""}>${option.label}</option>`).join("")}
+              </select>
+            </label>
+          </div>
+          <label>แนะนำตัวสั้น ๆ
+            <textarea name="description" placeholder="เช่น ชอบชีววิทยา อยากฝึกควิซทุกสัปดาห์">${escapeHtml(state.user.description || "")}</textarea>
+          </label>
+          <label>เป้าหมายของคุณ
+            <textarea name="learningGoal" placeholder="เช่น อยากเข้าใจฟิสิกส์ให้มั่นใจก่อนสอบ หรืออยากทำควิซทุกวัน">${escapeHtml(state.user.learningGoal || "")}</textarea>
+          </label>
           ${renderAvatarPicker(state.user)}
-          <button class="primary" type="submit">บันทึก avatar</button>
+          <button class="primary" type="submit">บันทึกโปรไฟล์</button>
         </form>
       </section>
       ${
@@ -2975,6 +3004,12 @@ async function render() {
   try {
     state.user = await store.getCurrentUser();
     const route = state.route.split("?")[0];
+    const onboardingAllowedRoutes = new Set(["/onboarding", "/login", "/signup", "/forgot-password", "/reset-password"]);
+    if (needsOnboarding(state.user) && !onboardingAllowedRoutes.has(route) && !route.startsWith("/admin")) {
+      history.replaceState({}, "", "/onboarding");
+      state.route = "/onboarding";
+      return render();
+    }
     const routeClass = route === "/" ? "is-home" : `has-corners route-${route.split("/")[1] || "home"}`;
     app.className = routeClass;
     if (route === "/") app.innerHTML = await homePage();
@@ -3889,11 +3924,16 @@ async function handleSubmit(event) {
 
     if (formType === "onboarding") {
       const favoriteSubject = data.get("favoriteSubject")?.toString() || "biology";
+      const firstName = data.get("firstName")?.toString().trim() || "";
+      const lastName = data.get("lastName")?.toString().trim() || "";
       await store.updateProfile({
-        displayName: data.get("displayName")?.toString().trim(),
+        firstName,
+        lastName,
+        displayName: [firstName, lastName].filter(Boolean).join(" "),
         school: data.get("school")?.toString().trim(),
         favoriteSubject,
         learningGoal: data.get("learningGoal")?.toString().trim(),
+        description: data.get("description")?.toString().trim(),
         avatar: collectAvatarFromForm(form),
         onboardedAt: new Date().toISOString(),
       });
@@ -3901,14 +3941,19 @@ async function handleSubmit(event) {
     }
 
     if (formType === "save-profile") {
+      const firstName = data.get("firstName")?.toString().trim() || "";
+      const lastName = data.get("lastName")?.toString().trim() || "";
       await store.updateProfile({
-        displayName: data.get("displayName")?.toString().trim(),
+        firstName,
+        lastName,
+        displayName: [firstName, lastName].filter(Boolean).join(" "),
         school: data.get("school")?.toString().trim(),
         favoriteSubject: data.get("favoriteSubject")?.toString(),
         learningGoal: data.get("learningGoal")?.toString(),
+        description: data.get("description")?.toString().trim(),
         avatar: collectAvatarFromForm(form),
       });
-      state.message = "บันทึก avatar แล้ว";
+      state.message = "บันทึกโปรไฟล์แล้ว";
       await render();
     }
 

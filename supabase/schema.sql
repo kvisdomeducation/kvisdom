@@ -4,10 +4,13 @@ create type public.quiz_status as enum ('draft', 'published');
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text not null,
+  first_name text,
+  last_name text,
   school text,
   role public.user_role not null default 'student',
   favorite_subject text check (favorite_subject in ('biology', 'physics', 'chemistry', 'math')),
   learning_goal text,
+  description text,
   avatar jsonb not null default '{}'::jsonb,
   onboarded_at timestamptz,
   created_at timestamptz not null default now()

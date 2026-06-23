@@ -90,6 +90,21 @@ function publicUser(user) {
   return rest;
 }
 
+function splitName(value = "") {
+  const parts = String(value || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  return {
+    firstName: parts[0] || "",
+    lastName: parts.slice(1).join(" "),
+  };
+}
+
+function isMissingProfileColumnError(error) {
+  return /first_name|last_name|description/i.test(error?.message || "") && ["PGRST204", "42703"].includes(error?.code || "");
+}
+
 function normalizeSupabaseQuiz(row, questions = []) {
   return {
     id: row.id,
@@ -130,20 +145,27 @@ async function ensureSupabaseProfile(authUser) {
 
   const metadata = authUser.user_metadata || {};
   const displayName = metadata.full_name || metadata.name || authUser.email?.split("@")[0] || "KVISdom Learner";
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .upsert({
-      id: authUser.id,
-      display_name: displayName,
-      school: "",
-      role: "student",
-      favorite_subject: null,
-      learning_goal: "",
-      avatar: {},
-      onboarded_at: null,
-    })
-    .select()
-    .single();
+  const nameParts = splitName(displayName);
+  const profilePayload = {
+    id: authUser.id,
+    display_name: displayName,
+    first_name: metadata.given_name || nameParts.firstName,
+    last_name: metadata.family_name || nameParts.lastName,
+    school: "",
+    role: "student",
+    favorite_subject: null,
+    learning_goal: "",
+    description: "",
+    avatar: {},
+    onboarded_at: null,
+  };
+  let { data: profile, error: profileError } = await supabase.from("profiles").upsert(profilePayload).select().single();
+  if (isMissingProfileColumnError(profileError)) {
+    const { first_name, last_name, description, ...fallbackPayload } = profilePayload;
+    const fallback = await supabase.from("profiles").upsert(fallbackPayload).select().single();
+    profile = fallback.data;
+    profileError = fallback.error;
+  }
   if (profileError) throw profileError;
   return profile;
 }
@@ -265,10 +287,13 @@ export const store = {
         id: authUser.id,
         email: authUser.email,
         displayName: profile.display_name,
+        firstName: profile.first_name || splitName(profile.display_name).firstName,
+        lastName: profile.last_name || splitName(profile.display_name).lastName,
         school: profile.school,
         role: profile.role,
         favoriteSubject: profile.favorite_subject,
         learningGoal: profile.learning_goal,
+        description: profile.description || "",
         avatar: profile.avatar || {},
         onboardedAt: profile.onboarded_at,
       };
@@ -295,16 +320,24 @@ export const store = {
       }
       const userId = data.user?.id;
       if (!userId) return null;
-      const { error: profileError } = await supabase.from("profiles").upsert({
+      const profilePayload = {
         id: userId,
         display_name: safeDisplayName,
+        first_name: splitName(safeDisplayName).firstName,
+        last_name: splitName(safeDisplayName).lastName,
         school: school || "",
         role: "student",
         favorite_subject: null,
         learning_goal: "",
+        description: "",
         avatar: {},
         onboarded_at: null,
-      });
+      };
+      let { error: profileError } = await supabase.from("profiles").upsert(profilePayload);
+      if (isMissingProfileColumnError(profileError)) {
+        const { first_name, last_name, description, ...fallbackPayload } = profilePayload;
+        profileError = (await supabase.from("profiles").upsert(fallbackPayload)).error;
+      }
       if (profileError) throw profileError;
       return this.getCurrentUser();
     }
@@ -318,10 +351,13 @@ export const store = {
       email: safeEmail,
       password,
       displayName: safeDisplayName,
+      firstName: splitName(safeDisplayName).firstName,
+      lastName: splitName(safeDisplayName).lastName,
       school: school || "",
       role: "student",
       favoriteSubject: "",
       learningGoal: "",
+      description: "",
       avatar: { body: "orbit", color: "green", face: "calm", accessory: "spark" },
       onboardedAt: "",
     };
@@ -339,15 +375,25 @@ export const store = {
     const onboardedAt = profileDraft.onboardedAt || currentUser.onboardedAt || new Date().toISOString();
 
     if (supabase) {
+      const firstName = profileDraft.firstName || "";
+      const lastName = profileDraft.lastName || "";
+      const displayName = profileDraft.displayName || [firstName, lastName].filter(Boolean).join(" ") || currentUser.displayName || "KVISdom Learner";
       const payload = {
-        display_name: profileDraft.displayName || currentUser.displayName || "KVISdom Learner",
+        display_name: displayName,
+        first_name: firstName,
+        last_name: lastName,
         school: profileDraft.school || "",
         favorite_subject: profileDraft.favoriteSubject || null,
         learning_goal: profileDraft.learningGoal || "",
+        description: profileDraft.description || "",
         avatar,
         onboarded_at: onboardedAt,
       };
-      const { error } = await supabase.from("profiles").update(payload).eq("id", currentUser.id);
+      let { error } = await supabase.from("profiles").update(payload).eq("id", currentUser.id);
+      if (isMissingProfileColumnError(error)) {
+        const { first_name, last_name, description, ...fallbackPayload } = payload;
+        error = (await supabase.from("profiles").update(fallbackPayload).eq("id", currentUser.id)).error;
+      }
       if (error) throw error;
       return this.getCurrentUser();
     }
@@ -355,10 +401,13 @@ export const store = {
     const state = readLocalState();
     const user = state.users.find((candidate) => candidate.id === state.currentUserId);
     if (!user) throw new Error("ต้องเข้าสู่ระบบก่อน");
-    user.displayName = profileDraft.displayName || user.displayName || "KVISdom Learner";
+    user.firstName = profileDraft.firstName || "";
+    user.lastName = profileDraft.lastName || "";
+    user.displayName = profileDraft.displayName || [user.firstName, user.lastName].filter(Boolean).join(" ") || user.displayName || "KVISdom Learner";
     user.school = profileDraft.school || "";
     user.favoriteSubject = profileDraft.favoriteSubject || user.favoriteSubject || "";
     user.learningGoal = profileDraft.learningGoal || "";
+    user.description = profileDraft.description || "";
     user.avatar = avatar;
     user.onboardedAt = onboardedAt;
     writeLocalState(state);
