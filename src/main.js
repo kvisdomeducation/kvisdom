@@ -1790,7 +1790,12 @@ function authPage(mode) {
         </div>
         <div class="auth-form-panel">
           <button class="google-auth-button" type="button" data-action="google-auth">
-            <span aria-hidden="true">G</span>
+            <svg class="google-mark" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#4285f4" d="M23.5 12.3c0-.8-.1-1.5-.2-2.2H12v4.2h6.5c-.3 1.4-1.1 2.7-2.3 3.5v2.9h3.7c2.2-2 3.6-5 3.6-8.4Z" />
+              <path fill="#34a853" d="M12 24c3.2 0 5.9-1.1 7.9-2.9l-3.7-2.9c-1 .7-2.4 1.1-4.2 1.1-3.1 0-5.8-2.1-6.7-5H1.5v3C3.5 21.9 7.4 24 12 24Z" />
+              <path fill="#fbbc05" d="M5.3 14.3c-.2-.7-.4-1.5-.4-2.3s.1-1.6.4-2.3v-3H1.5C.5 8.3 0 10.1 0 12s.5 3.7 1.5 5.3l3.8-3Z" />
+              <path fill="#ea4335" d="M12 4.7c1.7 0 3.3.6 4.5 1.8L19.8 3C17.8 1.1 15.1 0 12 0 7.4 0 3.5 2.1 1.5 6.7l3.8 3C6.2 6.8 8.9 4.7 12 4.7Z" />
+            </svg>
             Continue with Google
           </button>
           <button class="guest-auth-button" type="button" data-nav="/">

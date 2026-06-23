@@ -2126,16 +2126,10 @@ p {
   box-shadow: var(--shadow-sm);
 }
 
-.google-auth-button span {
-  display: grid;
+.google-mark {
   width: 24px;
   height: 24px;
-  place-items: center;
-  border-radius: 50%;
-  color: #fff;
-  background: #4285f4;
-  font-size: 0.95rem;
-  font-weight: 950;
+  flex: 0 0 24px;
 }
 
 .guest-auth-button {
