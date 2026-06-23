@@ -1810,8 +1810,8 @@ function authPage(mode) {
               <label>รหัสผ่าน<input name="password" type="password" required minlength="6" placeholder="อย่างน้อย 6 ตัวอักษร" /></label>
               <div class="email-auth-actions">
                 <button class="primary" type="submit" name="authMode" value="login">เข้าสู่ระบบด้วยอีเมล</button>
-                <button type="submit" name="authMode" value="signup">สร้างบัญชีด้วยอีเมล</button>
               </div>
+              <p class="email-signup-prompt">ยังไม่มีบัญชีอีเมล? <button type="submit" name="authMode" value="signup">สร้างบัญชีด้วยอีเมล</button></p>
             </form>
             ${store.mode === "local" ? `<p class="helper">Demo student: student@kvisdom.local / kvisdom</p>` : ""}
           </details>
