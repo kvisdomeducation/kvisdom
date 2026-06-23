@@ -282,8 +282,17 @@ export const store = {
     const safeEmail = String(email || "").trim();
     const safeDisplayName = displayName || safeEmail.split("@")[0] || "KVISdom Learner";
     if (supabase) {
-      const { data, error } = await supabase.auth.signUp({ email: safeEmail, password });
+      const { data, error } = await supabase.auth.signUp({
+        email: safeEmail,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/login`,
+        },
+      });
       if (error) throw error;
+      if (!data.session) {
+        return { pendingEmailConfirmation: true, email: safeEmail };
+      }
       const userId = data.user?.id;
       if (!userId) return null;
       const { error: profileError } = await supabase.from("profiles").upsert({
@@ -382,6 +391,35 @@ export const store = {
       },
     });
     if (error) throw error;
+  },
+
+  async requestPasswordReset(email) {
+    const safeEmail = String(email || "").trim();
+    if (supabase) {
+      const { error } = await supabase.auth.resetPasswordForEmail(safeEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      return;
+    }
+    const state = readLocalState();
+    if (!state.users.some((user) => user.email.toLowerCase() === safeEmail.toLowerCase())) {
+      return;
+    }
+  },
+
+  async updatePassword(password) {
+    if (supabase) {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      return this.getCurrentUser();
+    }
+    const state = readLocalState();
+    const user = state.users.find((candidate) => candidate.id === state.currentUserId);
+    if (!user) throw new Error("ลิงก์รีเซ็ตรหัสผ่านหมดอายุ กรุณาขออีเมลใหม่");
+    user.password = password;
+    writeLocalState(state);
+    return publicUser(user);
   },
 
   async signOut() {

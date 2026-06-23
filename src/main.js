@@ -1828,12 +1828,66 @@ function authPage(mode) {
                     <div class="email-auth-actions">
                       <button class="primary" type="submit">เข้าสู่ระบบด้วยอีเมล</button>
                     </div>
+                    <button class="text-link-button" type="button" data-nav="/forgot-password">ลืมรหัสผ่าน?</button>
                     <p class="email-signup-prompt">ยังไม่มีบัญชีอีเมล? <button type="button" data-nav="/signup">สร้างบัญชีด้วยอีเมล</button></p>
                   </form>
                   ${store.mode === "local" ? `<p class="helper">Demo student: student@kvisdom.local / kvisdom</p>` : ""}
                 </details>
               `
           }
+        </div>
+      </section>
+    </main>
+  `);
+}
+
+function forgotPasswordPage() {
+  return pageShell(`
+    <main class="auth-layout">
+      <section class="auth-card auth-panel">
+        <div class="auth-story">
+          <p class="eyebrow">Password help</p>
+          <h1>ลืมรหัสผ่าน?</h1>
+          <p>กรอกอีเมลที่ใช้กับ KVISdom แล้วระบบจะส่งลิงก์สำหรับตั้งรหัสผ่านใหม่ไปให้</p>
+        </div>
+        <div class="auth-form-panel">
+          <div class="email-signup-card">
+            <p class="eyebrow">Reset password</p>
+            <h2>ขอลิงก์ตั้งรหัสผ่านใหม่</h2>
+            <p>ถ้าอีเมลนี้มีบัญชีอยู่ คุณจะได้รับอีเมลสำหรับรีเซ็ตรหัสผ่าน</p>
+            <form data-form="forgot-password" class="form-stack">
+              <label>อีเมล<input name="email" type="email" required placeholder="you@example.com" /></label>
+              <button class="primary" type="submit">ส่งอีเมลรีเซ็ตรหัสผ่าน</button>
+            </form>
+            <button class="text-link-button" type="button" data-nav="/login">กลับไปเข้าสู่ระบบ</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  `);
+}
+
+function resetPasswordPage() {
+  return pageShell(`
+    <main class="auth-layout">
+      <section class="auth-card auth-panel">
+        <div class="auth-story">
+          <p class="eyebrow">New password</p>
+          <h1>ตั้งรหัสผ่านใหม่</h1>
+          <p>ใส่รหัสผ่านใหม่สำหรับบัญชี KVISdom ของคุณ แล้วกลับไปเรียนต่อได้ทันที</p>
+        </div>
+        <div class="auth-form-panel">
+          <div class="email-signup-card">
+            <p class="eyebrow">Security</p>
+            <h2>เลือกรหัสผ่านใหม่</h2>
+            <p>ใช้รหัสผ่านอย่างน้อย 6 ตัวอักษร</p>
+            <form data-form="reset-password" class="form-stack">
+              <label>รหัสผ่านใหม่<input name="password" type="password" required minlength="6" placeholder="อย่างน้อย 6 ตัวอักษร" /></label>
+              <label>ยืนยันรหัสผ่านใหม่<input name="confirmPassword" type="password" required minlength="6" placeholder="พิมพ์รหัสผ่านอีกครั้ง" /></label>
+              <button class="primary" type="submit">บันทึกรหัสผ่านใหม่</button>
+            </form>
+            <button class="text-link-button" type="button" data-nav="/login">กลับไปเข้าสู่ระบบ</button>
+          </div>
         </div>
       </section>
     </main>
@@ -2926,6 +2980,8 @@ async function render() {
     if (route === "/") app.innerHTML = await homePage();
     else if (route === "/signup") app.innerHTML = authPage("signup");
     else if (route === "/login") app.innerHTML = authPage("login");
+    else if (route === "/forgot-password") app.innerHTML = forgotPasswordPage();
+    else if (route === "/reset-password") app.innerHTML = resetPasswordPage();
     else if (route === "/onboarding") app.innerHTML = await onboardingPage();
     else if (route === "/search") app.innerHTML = await searchPage();
     else if (route === "/subjects") app.innerHTML = await subjectsPage();
@@ -3791,7 +3847,29 @@ async function handleSubmit(event) {
         email,
         password: data.get("password"),
       });
+      if (user?.pendingEmailConfirmation) {
+        navigate("/login");
+        setMessage(`ส่งอีเมลยืนยันไปที่ ${user.email} แล้ว กรุณาเปิดลิงก์ในอีเมลก่อนเข้าสู่ระบบ`);
+        return;
+      }
       navigate(needsOnboarding(user) ? "/onboarding" : "/");
+    }
+
+    if (formType === "forgot-password") {
+      const email = data.get("email")?.toString().trim();
+      await store.requestPasswordReset(email);
+      navigate("/login");
+      setMessage(`ถ้า ${email} มีบัญชีอยู่ ระบบจะส่งอีเมลสำหรับตั้งรหัสผ่านใหม่ไปให้`);
+      return;
+    }
+
+    if (formType === "reset-password") {
+      const password = data.get("password")?.toString() || "";
+      const confirmPassword = data.get("confirmPassword")?.toString() || "";
+      if (password !== confirmPassword) throw new Error("รหัสผ่านทั้งสองช่องไม่ตรงกัน");
+      const user = await store.updatePassword(password);
+      navigate(user && needsOnboarding(user) ? "/onboarding" : "/");
+      return;
     }
 
     if (formType === "login") {
