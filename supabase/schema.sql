@@ -106,9 +106,9 @@ create policy "users can update own profile"
   using (auth.uid() = id)
   with check (auth.uid() = id);
 
-create policy "published quizzes are public to signed in users"
+create policy "published quizzes are public"
   on public.quizzes for select
-  to authenticated
+  to anon, authenticated
   using (
     status = 'published'
     or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
@@ -122,7 +122,7 @@ create policy "admins manage quizzes"
 
 create policy "questions follow quiz visibility"
   on public.questions for select
-  to authenticated
+  to anon, authenticated
   using (
     exists (
       select 1 from public.quizzes q
@@ -142,7 +142,7 @@ create policy "admins manage questions"
 
 create policy "choices follow question visibility"
   on public.choices for select
-  to authenticated
+  to anon, authenticated
   using (
     exists (
       select 1 from public.questions question
@@ -196,9 +196,9 @@ create policy "students create answers for own attempts"
     )
   );
 
-create policy "published content is public to signed in users"
+create policy "published content is public"
   on public.content_items for select
-  to authenticated
+  to anon, authenticated
   using (
     status = 'published'
     or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')

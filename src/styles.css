@@ -2138,6 +2138,22 @@ p {
   font-weight: 950;
 }
 
+.guest-auth-button {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  min-height: 48px;
+  border: 1px solid rgba(17, 134, 91, 0.24);
+  background: rgba(232, 246, 237, 0.76);
+  color: var(--green-dark);
+}
+
+.guest-auth-button small {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
 .auth-divider {
   display: flex;
   align-items: center;

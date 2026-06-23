@@ -908,7 +908,7 @@ function buildQuery(params = {}) {
 function pageShell(content) {
   const isHome = state.route.split("?")[0] === "/";
   const isAdmin = state.user?.role === "admin";
-  const accountLabel = state.user ? `บัญชีของ ${state.user.displayName || state.user.email}` : "เข้าสู่ระบบ";
+  const accountLabel = state.user ? `บัญชีของ ${state.user.displayName || state.user.email}` : "เข้าสู่ระบบเพื่อเก็บ EXP";
   const accountNav = state.user ? "/profile" : "/login";
   return `
     <button class="account-corner" type="button" data-nav="${accountNav}" aria-label="${escapeHtml(accountLabel)}" title="${escapeHtml(accountLabel)}">
@@ -1797,15 +1797,17 @@ function authPage(mode) {
             <span aria-hidden="true">G</span>
             ${isSignup ? "สมัครด้วย Google" : "เข้าสู่ระบบด้วย Google"}
           </button>
+          <button class="guest-auth-button" type="button" data-nav="/">
+            เรียนแบบ Guest
+            <small>ดูบทเรียนได้ แต่ไม่เก็บ EXP หรือ badge</small>
+          </button>
           <div class="auth-divider"><span>หรือใช้อีเมล</span></div>
           <form data-form="${mode}" class="form-stack">
             <label>อีเมล<input name="email" type="email" required placeholder="you@example.com" /></label>
             <label>รหัสผ่าน<input name="password" type="password" required minlength="6" placeholder="อย่างน้อย 6 ตัวอักษร" /></label>
             <button class="primary" type="submit">${isSignup ? "สร้างบัญชีและเริ่มเรียน" : "เข้าสู่ KVISdom"}</button>
           </form>
-          <p class="helper">
-            Demo student: student@kvisdom.local / kvisdom
-          </p>
+          <p class="helper">${store.mode === "supabase" ? "แนะนำให้ใช้ Google สำหรับบัญชีนักเรียนจริง อีเมล/รหัสผ่านเป็นทางเลือกสำรอง" : "Demo student: student@kvisdom.local / kvisdom"}</p>
         </div>
       </section>
     </main>
@@ -2048,7 +2050,13 @@ async function quizTakePage(quizId) {
             `,
           )
           .join("")}
-        ${state.lastResult ? "" : `<button class="primary wide quiz-submit" type="submit" disabled>ตอบให้ครบก่อนรับ EXP</button>`}
+        ${
+          state.lastResult
+            ? ""
+            : state.user
+              ? `<button class="primary wide quiz-submit" type="submit" disabled>ตอบให้ครบก่อนรับ EXP</button>`
+              : `<button class="primary wide quiz-submit guest-quiz-submit" type="button" data-nav="/login">เข้าสู่ระบบด้วย Google เพื่อรับ EXP</button>`
+        }
       </form>
     </main>
   `);
@@ -3612,6 +3620,11 @@ function updateQuizProgress() {
   if (text) text.textContent = `ตอบแล้ว ${answered}/${total}`;
   if (fill) fill.style.width = `${percent}%`;
   if (submit) {
+    if (!state.user) {
+      submit.disabled = false;
+      submit.textContent = answered < total ? "เข้าสู่ระบบเพื่อบันทึก EXP" : "เข้าสู่ระบบด้วย Google เพื่อรับ EXP";
+      return;
+    }
     submit.disabled = answered < total;
     submit.textContent = answered < total ? "ตอบให้ครบก่อนรับ EXP" : "ส่งคำตอบและรับ EXP";
   }
