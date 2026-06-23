@@ -122,6 +122,32 @@ function normalizeSupabaseContent(row) {
   };
 }
 
+async function ensureSupabaseProfile(authUser) {
+  if (!authUser) return null;
+  const { data: existingProfile, error } = await supabase.from("profiles").select("*").eq("id", authUser.id).maybeSingle();
+  if (error) throw error;
+  if (existingProfile) return existingProfile;
+
+  const metadata = authUser.user_metadata || {};
+  const displayName = metadata.full_name || metadata.name || authUser.email?.split("@")[0] || "KVISdom Learner";
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .upsert({
+      id: authUser.id,
+      display_name: displayName,
+      school: "",
+      role: "student",
+      favorite_subject: null,
+      learning_goal: "",
+      avatar: {},
+      onboarded_at: null,
+    })
+    .select()
+    .single();
+  if (profileError) throw profileError;
+  return profile;
+}
+
 function isUsableUrl(value = "") {
   try {
     const parsed = new URL(value);
@@ -234,8 +260,7 @@ export const store = {
       const { data: sessionData } = await supabase.auth.getSession();
       const authUser = sessionData.session?.user;
       if (!authUser) return null;
-      const { data: profile, error } = await supabase.from("profiles").select("*").eq("id", authUser.id).single();
-      if (error) throw error;
+      const profile = await ensureSupabaseProfile(authUser);
       return {
         id: authUser.id,
         email: authUser.email,
@@ -346,6 +371,17 @@ export const store = {
     state.currentUserId = user.id;
     writeLocalState(state);
     return publicUser(user);
+  },
+
+  async signInWithGoogle() {
+    if (!supabase) throw new Error("Google login ต้องเปิดใช้ Supabase ก่อน");
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/`,
+      },
+    });
+    if (error) throw error;
   },
 
   async signOut() {

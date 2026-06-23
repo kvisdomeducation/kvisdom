@@ -1793,6 +1793,11 @@ function authPage(mode) {
             <button class="${!isSignup ? "active" : ""}" data-nav="/login" type="button">Login</button>
             <button class="${isSignup ? "active" : ""}" data-nav="/signup" type="button">Sign up</button>
           </div>
+          <button class="google-auth-button" type="button" data-action="google-auth">
+            <span aria-hidden="true">G</span>
+            ${isSignup ? "สมัครด้วย Google" : "เข้าสู่ระบบด้วย Google"}
+          </button>
+          <div class="auth-divider"><span>หรือใช้อีเมล</span></div>
           <form data-form="${mode}" class="form-stack">
             <label>อีเมล<input name="email" type="email" required placeholder="you@example.com" /></label>
             <label>รหัสผ่าน<input name="password" type="password" required minlength="6" placeholder="อย่างน้อย 6 ตัวอักษร" /></label>
@@ -3078,6 +3083,14 @@ function bindEvents() {
 
   app.querySelectorAll('[data-action="start-study"]').forEach((button) => {
     button.addEventListener("click", handleStartStudy);
+  });
+
+  app.querySelector('[data-action="google-auth"]')?.addEventListener("click", async () => {
+    try {
+      await store.signInWithGoogle();
+    } catch (error) {
+      setMessage(error.message);
+    }
   });
 
   app.querySelectorAll('[data-action="delete-quiz"]').forEach((button) => {
