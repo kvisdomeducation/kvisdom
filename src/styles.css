@@ -2154,6 +2154,28 @@ p {
   font-weight: 850;
 }
 
+.email-auth-details {
+  display: grid;
+  gap: 12px;
+}
+
+.email-auth-details summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-weight: 900;
+  text-align: center;
+}
+
+.email-auth-details[open] summary {
+  color: var(--green-dark);
+}
+
+.email-auth-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
 .auth-divider {
   display: flex;
   align-items: center;

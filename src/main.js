@@ -1774,14 +1774,14 @@ function authPage(mode) {
       </main>
     `);
   }
-  const isSignup = mode === "signup";
+  const showEmailFallback = mode === "signup" || store.mode === "local";
   return pageShell(`
     <main class="auth-layout">
       <section class="auth-card auth-panel">
         <div class="auth-story">
           <p class="eyebrow">KVISdom account</p>
-          <h1>${isSignup ? "เริ่มเก็บ EXP ของคุณ" : "กลับมาเรียนต่อ"}</h1>
-          <p>บัญชีเดียวสำหรับเลือกวิชา ดูคลิป ทำควิซ เก็บ EXP และกลับมาทบทวนเส้นทางเรียนของตัวเอง</p>
+          <h1>เข้าสู่ KVISdom</h1>
+          <p>ใช้บัญชี Google เดียวเพื่อเลือกวิชา ดูคลิป ทำควิซ เก็บ EXP และกลับมาทบทวนเส้นทางเรียนของตัวเอง</p>
           <div class="auth-benefits" aria-label="สิ่งที่จะได้หลังเข้าสู่ระบบ">
             <span>Subject path</span>
             <span>EXP history</span>
@@ -1789,25 +1789,27 @@ function authPage(mode) {
           </div>
         </div>
         <div class="auth-form-panel">
-          <div class="auth-switch" aria-label="เลือกวิธีเข้าใช้งาน">
-            <button class="${!isSignup ? "active" : ""}" data-nav="/login" type="button">Login</button>
-            <button class="${isSignup ? "active" : ""}" data-nav="/signup" type="button">Sign up</button>
-          </div>
           <button class="google-auth-button" type="button" data-action="google-auth">
             <span aria-hidden="true">G</span>
-            ${isSignup ? "สมัครด้วย Google" : "เข้าสู่ระบบด้วย Google"}
+            Continue with Google
           </button>
           <button class="guest-auth-button" type="button" data-nav="/">
             เรียนแบบ Guest
             <small>ดูบทเรียนได้ แต่ไม่เก็บ EXP หรือ badge</small>
           </button>
-          <div class="auth-divider"><span>หรือใช้อีเมล</span></div>
-          <form data-form="${mode}" class="form-stack">
-            <label>อีเมล<input name="email" type="email" required placeholder="you@example.com" /></label>
-            <label>รหัสผ่าน<input name="password" type="password" required minlength="6" placeholder="อย่างน้อย 6 ตัวอักษร" /></label>
-            <button class="primary" type="submit">${isSignup ? "สร้างบัญชีและเริ่มเรียน" : "เข้าสู่ KVISdom"}</button>
-          </form>
-          <p class="helper">${store.mode === "supabase" ? "แนะนำให้ใช้ Google สำหรับบัญชีนักเรียนจริง อีเมล/รหัสผ่านเป็นทางเลือกสำรอง" : "Demo student: student@kvisdom.local / kvisdom"}</p>
+          <details class="email-auth-details" ${showEmailFallback ? "open" : ""}>
+            <summary>Use email instead</summary>
+            <div class="auth-divider"><span>email backup</span></div>
+            <form data-form="email-auth" class="form-stack">
+              <label>อีเมล<input name="email" type="email" required placeholder="you@example.com" /></label>
+              <label>รหัสผ่าน<input name="password" type="password" required minlength="6" placeholder="อย่างน้อย 6 ตัวอักษร" /></label>
+              <div class="email-auth-actions">
+                <button class="primary" type="submit" name="authMode" value="login">เข้าสู่ระบบด้วยอีเมล</button>
+                <button type="submit" name="authMode" value="signup">สร้างบัญชีด้วยอีเมล</button>
+              </div>
+            </form>
+            <p class="helper">${store.mode === "supabase" ? "Google คือวิธีหลักสำหรับนักเรียนจริง ส่วนอีเมลมีไว้เป็นทางเลือกสำรอง" : "Demo student: student@kvisdom.local / kvisdom"}</p>
+          </details>
         </div>
       </section>
     </main>
@@ -3750,6 +3752,17 @@ async function handleSubmit(event) {
   const data = new FormData(form);
 
   try {
+    if (formType === "email-auth") {
+      const email = data.get("email")?.toString().trim();
+      const password = data.get("password");
+      const authMode = data.get("authMode");
+      const user =
+        authMode === "signup"
+          ? await store.signUp({ displayName: email?.split("@")[0] || "KVISdom Learner", school: "", email, password })
+          : await store.signIn({ email, password });
+      navigate(user && needsOnboarding(user) ? "/onboarding" : "/");
+    }
+
     if (formType === "signup") {
       const email = data.get("email")?.toString().trim();
       const user = await store.signUp({
