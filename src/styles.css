@@ -2150,12 +2150,15 @@ p {
 
 .email-auth-details {
   display: grid;
-  gap: 12px;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 6px;
 }
 
 .email-auth-details summary {
   cursor: pointer;
   color: var(--muted);
+  font-size: 0.9rem;
   font-weight: 900;
   text-align: center;
 }
@@ -2167,7 +2170,26 @@ p {
 .email-auth-actions {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.email-auth-details .form-stack {
   gap: 10px;
+}
+
+.email-auth-details label {
+  gap: 5px;
+  font-size: 0.88rem;
+}
+
+.email-auth-details input {
+  min-height: 44px;
+}
+
+.email-auth-actions button {
+  min-height: 44px;
+  padding-inline: 10px;
+  font-size: 0.86rem;
 }
 
 .auth-divider {

@@ -1813,7 +1813,7 @@ function authPage(mode) {
                 <button type="submit" name="authMode" value="signup">สร้างบัญชีด้วยอีเมล</button>
               </div>
             </form>
-            <p class="helper">${store.mode === "supabase" ? "Google คือวิธีหลักสำหรับนักเรียนจริง ส่วนอีเมลมีไว้เป็นทางเลือกสำรอง" : "Demo student: student@kvisdom.local / kvisdom"}</p>
+            ${store.mode === "local" ? `<p class="helper">Demo student: student@kvisdom.local / kvisdom</p>` : ""}
           </details>
         </div>
       </section>
