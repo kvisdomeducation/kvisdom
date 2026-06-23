@@ -1774,14 +1774,15 @@ function authPage(mode) {
       </main>
     `);
   }
-  const showEmailFallback = mode === "signup" || store.mode === "local";
+  const isSignup = mode === "signup";
+  const showEmailFallback = store.mode === "local";
   return pageShell(`
     <main class="auth-layout">
       <section class="auth-card auth-panel">
         <div class="auth-story">
           <p class="eyebrow">KVISdom account</p>
-          <h1>เข้าสู่ KVISdom</h1>
-          <p>ใช้บัญชี Google เดียวเพื่อเลือกวิชา ดูคลิป ทำควิซ เก็บ EXP และกลับมาทบทวนเส้นทางเรียนของตัวเอง</p>
+          <h1>${isSignup ? "สร้างบัญชี KVISdom" : "เข้าสู่ KVISdom"}</h1>
+          <p>${isSignup ? "สร้างบัญชีอีเมลสำรองสำหรับกรณีที่ใช้ Google ไม่ได้ แล้วกลับมาเก็บ EXP และ badge ได้เหมือนเดิม" : "ใช้บัญชี Google เดียวเพื่อเลือกวิชา ดูคลิป ทำควิซ เก็บ EXP และกลับมาทบทวนเส้นทางเรียนของตัวเอง"}</p>
           <div class="auth-benefits" aria-label="สิ่งที่จะได้หลังเข้าสู่ระบบ">
             <span>Subject path</span>
             <span>EXP history</span>
@@ -1789,32 +1790,50 @@ function authPage(mode) {
           </div>
         </div>
         <div class="auth-form-panel">
-          <button class="google-auth-button" type="button" data-action="google-auth">
-            <svg class="google-mark" viewBox="0 0 24 24" aria-hidden="true">
-              <path fill="#4285f4" d="M23.5 12.3c0-.8-.1-1.5-.2-2.2H12v4.2h6.5c-.3 1.4-1.1 2.7-2.3 3.5v2.9h3.7c2.2-2 3.6-5 3.6-8.4Z" />
-              <path fill="#34a853" d="M12 24c3.2 0 5.9-1.1 7.9-2.9l-3.7-2.9c-1 .7-2.4 1.1-4.2 1.1-3.1 0-5.8-2.1-6.7-5H1.5v3C3.5 21.9 7.4 24 12 24Z" />
-              <path fill="#fbbc05" d="M5.3 14.3c-.2-.7-.4-1.5-.4-2.3s.1-1.6.4-2.3v-3H1.5C.5 8.3 0 10.1 0 12s.5 3.7 1.5 5.3l3.8-3Z" />
-              <path fill="#ea4335" d="M12 4.7c1.7 0 3.3.6 4.5 1.8L19.8 3C17.8 1.1 15.1 0 12 0 7.4 0 3.5 2.1 1.5 6.7l3.8 3C6.2 6.8 8.9 4.7 12 4.7Z" />
-            </svg>
-            Continue with Google
-          </button>
-          <button class="guest-auth-button" type="button" data-nav="/">
-            เรียนแบบ Guest
-            <small>ดูบทเรียนได้ แต่ไม่เก็บ EXP หรือ badge</small>
-          </button>
-          <details class="email-auth-details" ${showEmailFallback ? "open" : ""}>
-            <summary>Use email instead</summary>
-            <div class="auth-divider"><span>email backup</span></div>
-            <form data-form="email-auth" class="form-stack">
-              <label>อีเมล<input name="email" type="email" required placeholder="you@example.com" /></label>
-              <label>รหัสผ่าน<input name="password" type="password" required minlength="6" placeholder="อย่างน้อย 6 ตัวอักษร" /></label>
-              <div class="email-auth-actions">
-                <button class="primary" type="submit" name="authMode" value="login">เข้าสู่ระบบด้วยอีเมล</button>
-              </div>
-              <p class="email-signup-prompt">ยังไม่มีบัญชีอีเมล? <button type="submit" name="authMode" value="signup">สร้างบัญชีด้วยอีเมล</button></p>
-            </form>
-            ${store.mode === "local" ? `<p class="helper">Demo student: student@kvisdom.local / kvisdom</p>` : ""}
-          </details>
+          ${
+            isSignup
+              ? `
+                <div class="email-signup-card">
+                  <p class="eyebrow">Email backup</p>
+                  <h2>สร้างบัญชีด้วยอีเมล</h2>
+                  <p>ใช้เมื่อยังไม่มี Google login หรืออยากมีทางเข้าสำรอง</p>
+                  <form data-form="signup" class="form-stack">
+                    <label>อีเมล<input name="email" type="email" required placeholder="you@example.com" /></label>
+                    <label>รหัสผ่าน<input name="password" type="password" required minlength="6" placeholder="อย่างน้อย 6 ตัวอักษร" /></label>
+                    <button class="primary" type="submit">สร้างบัญชี</button>
+                  </form>
+                  <button class="text-link-button" type="button" data-nav="/login">มีบัญชีอยู่แล้ว? กลับไปเข้าสู่ระบบ</button>
+                </div>
+              `
+              : `
+                <button class="google-auth-button" type="button" data-action="google-auth">
+                  <svg class="google-mark" viewBox="0 0 24 24" aria-hidden="true">
+                    <path fill="#4285f4" d="M23.5 12.3c0-.8-.1-1.5-.2-2.2H12v4.2h6.5c-.3 1.4-1.1 2.7-2.3 3.5v2.9h3.7c2.2-2 3.6-5 3.6-8.4Z" />
+                    <path fill="#34a853" d="M12 24c3.2 0 5.9-1.1 7.9-2.9l-3.7-2.9c-1 .7-2.4 1.1-4.2 1.1-3.1 0-5.8-2.1-6.7-5H1.5v3C3.5 21.9 7.4 24 12 24Z" />
+                    <path fill="#fbbc05" d="M5.3 14.3c-.2-.7-.4-1.5-.4-2.3s.1-1.6.4-2.3v-3H1.5C.5 8.3 0 10.1 0 12s.5 3.7 1.5 5.3l3.8-3Z" />
+                    <path fill="#ea4335" d="M12 4.7c1.7 0 3.3.6 4.5 1.8L19.8 3C17.8 1.1 15.1 0 12 0 7.4 0 3.5 2.1 1.5 6.7l3.8 3C6.2 6.8 8.9 4.7 12 4.7Z" />
+                  </svg>
+                  Continue with Google
+                </button>
+                <button class="guest-auth-button" type="button" data-nav="/">
+                  เรียนแบบ Guest
+                  <small>ดูบทเรียนได้ แต่ไม่เก็บ EXP หรือ badge</small>
+                </button>
+                <details class="email-auth-details" ${showEmailFallback ? "open" : ""}>
+                  <summary>Use email instead</summary>
+                  <div class="auth-divider"><span>email backup</span></div>
+                  <form data-form="email-auth" class="form-stack">
+                    <label>อีเมล<input name="email" type="email" required placeholder="you@example.com" /></label>
+                    <label>รหัสผ่าน<input name="password" type="password" required minlength="6" placeholder="อย่างน้อย 6 ตัวอักษร" /></label>
+                    <div class="email-auth-actions">
+                      <button class="primary" type="submit">เข้าสู่ระบบด้วยอีเมล</button>
+                    </div>
+                    <p class="email-signup-prompt">ยังไม่มีบัญชีอีเมล? <button type="button" data-nav="/signup">สร้างบัญชีด้วยอีเมล</button></p>
+                  </form>
+                  ${store.mode === "local" ? `<p class="helper">Demo student: student@kvisdom.local / kvisdom</p>` : ""}
+                </details>
+              `
+          }
         </div>
       </section>
     </main>
@@ -3760,11 +3779,7 @@ async function handleSubmit(event) {
     if (formType === "email-auth") {
       const email = data.get("email")?.toString().trim();
       const password = data.get("password");
-      const authMode = data.get("authMode");
-      const user =
-        authMode === "signup"
-          ? await store.signUp({ displayName: email?.split("@")[0] || "KVISdom Learner", school: "", email, password })
-          : await store.signIn({ email, password });
+      const user = await store.signIn({ email, password });
       navigate(user && needsOnboarding(user) ? "/onboarding" : "/");
     }
 

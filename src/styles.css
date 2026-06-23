@@ -2190,6 +2190,31 @@ p {
   font-size: 0.86rem;
 }
 
+.email-signup-card {
+  display: grid;
+  gap: 12px;
+}
+
+.email-signup-card h2,
+.email-signup-card p {
+  margin: 0;
+}
+
+.email-signup-card h2 {
+  font-size: 1.55rem;
+  line-height: 1.1;
+}
+
+.email-signup-card p {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.email-signup-card form {
+  margin-top: 4px;
+}
+
 .email-signup-prompt {
   margin: -2px 0 0;
   color: var(--muted);
@@ -2207,6 +2232,20 @@ p {
   box-shadow: none;
   font: inherit;
   font-weight: 950;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.text-link-button {
+  min-height: auto;
+  border: 0;
+  padding: 2px 0;
+  background: transparent;
+  color: var(--green-dark);
+  box-shadow: none;
+  font-size: 0.86rem;
+  font-weight: 950;
+  text-align: center;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
