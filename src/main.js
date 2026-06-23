@@ -356,8 +356,23 @@ window.addEventListener("popstate", () => {
 });
 
 function setMessage(message) {
-  state.message = message;
+  state.message = translateErrorMessage(message);
   render();
+}
+
+function translateErrorMessage(message = "") {
+  const text = String(message || "").trim();
+  const lower = text.toLowerCase();
+  if (!text) return "";
+  if (lower.includes("invalid login credentials")) return "อีเมลหรือรหัสผ่านไม่ถูกต้อง หรือบัญชียังไม่ได้ยืนยันอีเมล";
+  if (lower.includes("email not confirmed")) return "บัญชียังไม่ได้ยืนยันอีเมล กรุณาเปิดลิงก์ยืนยันในกล่องจดหมายก่อนเข้าสู่ระบบ";
+  if (lower.includes("user already registered") || lower.includes("already registered")) return "อีเมลนี้มีบัญชีอยู่แล้ว กรุณาเข้าสู่ระบบหรือกดลืมรหัสผ่าน";
+  if (lower.includes("signup is disabled")) return "ระบบสมัครบัญชีด้วยอีเมลยังไม่เปิดใช้งาน";
+  if (lower.includes("password should be at least") || lower.includes("password must be")) return "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร";
+  if (lower.includes("unable to validate email address") || lower.includes("invalid email")) return "รูปแบบอีเมลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง";
+  if (lower.includes("email rate limit exceeded")) return "ส่งอีเมลบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่";
+  if (lower.includes("rate limit") || lower.includes("too many")) return "มีการพยายามหลายครั้งเกินไป กรุณารอสักครู่แล้วลองใหม่";
+  return text;
 }
 
 function displayText(value = "", fallback = "") {
