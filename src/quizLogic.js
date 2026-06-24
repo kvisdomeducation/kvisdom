@@ -64,18 +64,22 @@ export function validateContentDraft(content) {
   const description = content.description?.trim() || "";
   const url = content.url?.trim() || "";
   const thumbnailUrl = content.thumbnailUrl?.trim() || "";
+  const resourceFileUrl = content.resourceFileUrl?.trim() || "";
 
   if (!title) errors.push("ต้องใส่ชื่อสื่อ");
   if (title && title.length < 8) errors.push("ชื่อสื่อต้องชัดเจนกว่านี้");
   if (!description) errors.push("ต้องใส่คำอธิบายสื่อ");
   if (!content.subject) errors.push("ต้องเลือกวิชา");
   if (!content.type) errors.push("ต้องเลือกประเภทสื่อ");
-  if (content.type && !["clip", "fact"].includes(content.type)) errors.push("ประเภทสื่อต้องเป็นคลิปหรือเกร็ดวิทย์");
+  if (content.type && !["clip", "fact", "file"].includes(content.type)) errors.push("ประเภทสื่อต้องเป็นคลิป เกร็ดวิทย์ หรือไฟล์");
   if (content.type === "clip" && !hasVideoSource(url, thumbnailUrl)) {
     errors.push("คลิปที่ publish ต้องมี YouTube video URL หรือภาพปก");
   }
   if (content.type === "fact" && !hasGoogleDriveSource(url)) {
     errors.push("เกร็ดวิทย์ที่ publish ต้องมีลิงก์วิดีโอ Google Drive");
+  }
+  if (content.type === "file" && !resourceFileUrl) {
+    errors.push("ไฟล์ที่ publish ต้องมีไฟล์อัปโหลดหรือลิงก์ไฟล์");
   }
   return errors;
 }

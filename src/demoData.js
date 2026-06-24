@@ -132,6 +132,22 @@ export const DEMO_CONTENT = [
     createdAt: "2026-06-21T00:00:00.000Z",
   },
   {
+    id: "file-physics-giveaway",
+    type: "file",
+    title: "Rubber Band Car Giveaway Sheet",
+    description: "ไฟล์ worksheet และของแจกสำหรับกิจกรรมรถพลังยาง นักเรียนเปิดได้จากแท็บไฟล์โดยไม่ต้องเข้าไปในคลิป",
+    subject: "physics",
+    url: "",
+    thumbnailUrl: "/assets/kvisdom-roadshow-class.jpg",
+    thumbnailPositionX: 50,
+    thumbnailPositionY: 50,
+    resourceFileName: "rubber-band-car-giveaway.txt",
+    resourceFileUrl:
+      "data:text/plain;charset=utf-8,Rubber%20Band%20Car%20Giveaway%20Sheet%0A1.%20Sketch%20your%20car%20design.%0A2.%20Record%20rubber%20band%20turns%20and%20distance.%0A3.%20Write%20one%20improvement%20for%20the%20next%20trial.",
+    status: "published",
+    createdAt: "2026-06-21T00:00:00.000Z",
+  },
+  {
     id: "clip-growth-race",
     type: "clip",
     title: "Linear vs Exponential Growth Race",

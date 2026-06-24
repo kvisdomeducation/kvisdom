@@ -205,7 +205,7 @@ function hasYouTubeVideoId(value = "") {
 }
 
 function isSupportedContentType(type = "") {
-  return type === "clip" || type === "fact";
+  return type === "clip" || type === "fact" || type === "file";
 }
 
 function reconcileDemoContent(contentItems = [], deletedContentIds = []) {
@@ -557,7 +557,7 @@ export const store = {
   },
 
   async saveContent(contentDraft) {
-    if (!isSupportedContentType(contentDraft.type)) throw new Error("ประเภทสื่อต้องเป็นคลิปหรือเกร็ดวิทย์");
+    if (!isSupportedContentType(contentDraft.type)) throw new Error("ประเภทสื่อต้องเป็นคลิป เกร็ดวิทย์ หรือไฟล์");
     if (supabase) {
       const user = await this.getCurrentUser();
       if (!user || user.role !== "admin") throw new Error("ต้องเป็นแอดมินก่อน");

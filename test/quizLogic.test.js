@@ -118,7 +118,7 @@ test("validateContentDraft accepts a clip with a real YouTube thumbnail source",
   assert.deepEqual(errors, []);
 });
 
-test("validateContentDraft treats science facts as Google Drive video media and removes other type", () => {
+test("validateContentDraft treats facts as Google Drive video media and supports file resources", () => {
   const invalidOther = validateContentDraft({
     type: "other",
     title: "STEM Roadshow Challenge",
@@ -146,8 +146,32 @@ test("validateContentDraft treats science facts as Google Drive video media and 
     thumbnailUrl: "",
     status: "published",
   });
+  const validFile = validateContentDraft({
+    type: "file",
+    title: "Rubber Band Car Worksheet",
+    description: "ไฟล์ worksheet สำหรับให้นักเรียนเปิดโดยตรงจากแท็บไฟล์",
+    subject: "physics",
+    url: "",
+    thumbnailUrl: "",
+    resourceFileName: "worksheet.pdf",
+    resourceFileUrl: "https://drive.google.com/file/d/1worksheetDemo/view?usp=sharing",
+    status: "published",
+  });
+  const invalidFile = validateContentDraft({
+    type: "file",
+    title: "Rubber Band Car Worksheet",
+    description: "ไฟล์ worksheet สำหรับให้นักเรียนเปิดโดยตรงจากแท็บไฟล์",
+    subject: "physics",
+    url: "",
+    thumbnailUrl: "",
+    resourceFileName: "",
+    resourceFileUrl: "",
+    status: "published",
+  });
 
-  assert.ok(invalidOther.some((error) => error.includes("คลิปหรือเกร็ดวิทย์")));
+  assert.ok(invalidOther.some((error) => error.includes("คลิป เกร็ดวิทย์ หรือไฟล์")));
   assert.ok(invalidFact.some((error) => error.includes("Google Drive")));
   assert.deepEqual(validFact, []);
+  assert.deepEqual(validFile, []);
+  assert.ok(invalidFile.some((error) => error.includes("ไฟล์ที่ publish")));
 });

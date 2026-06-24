@@ -18,7 +18,7 @@ create table public.profiles (
 
 create table public.content_items (
   id uuid primary key default gen_random_uuid(),
-  type text not null check (type in ('clip', 'fact')),
+  type text not null check (type in ('clip', 'fact', 'file')),
   title text not null,
   description text not null,
   subject text not null check (subject in ('biology', 'physics', 'chemistry', 'math')),
