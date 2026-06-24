@@ -1287,10 +1287,10 @@ async function contentLessonPage(contentId) {
             <p>${escapeHtml(item.description)}</p>
           </div>
           ${
-            item.type === "fact" && item.detailText
+            (item.type === "fact" || item.type === "file") && item.detailText
               ? `<section class="fact-detail-panel">
                   <p class="eyebrow">ข้อมูลเพิ่มเติม</p>
-                  <h2>อ่านต่อจากเกร็ดวิทย์</h2>
+                  <h2>${item.type === "file" ? "รายละเอียดไฟล์" : "อ่านต่อจากเกร็ดวิทย์"}</h2>
                   <p>${escapeHtml(item.detailText).replaceAll("\n", "<br>")}</p>
                 </section>`
               : ""
@@ -2847,8 +2847,8 @@ async function contentEditorPage(contentId = "new") {
               </div>
               <label><span data-url-label>${copy.urlLabel}</span><input name="url" value="${escapeHtml(content.url)}" placeholder="${copy.urlPlaceholder}" /></label>
               ${
-                content.type === "fact"
-                  ? `<label>ข้อมูลเพิ่มเติม<textarea name="detailText" placeholder="เขียนย่อหน้าขยายความ เช่น หลักการ วิธียกตัวอย่าง หรือสิ่งที่นักเรียนควรรู้ต่อจากวิดีโอ">${escapeHtml(content.detailText || "")}</textarea></label>`
+                content.type === "fact" || content.type === "file"
+                  ? `<label>${content.type === "file" ? "รายละเอียดแบบยาวของไฟล์" : "ข้อมูลเพิ่มเติม"}<textarea name="detailText" placeholder="${content.type === "file" ? "เขียนย่อหน้ายาวว่าไฟล์นี้คืออะไร ใช้ตอนไหน มีอะไรอยู่ข้างใน และนักเรียนควรทำอะไรหลังเปิดไฟล์" : "เขียนย่อหน้าขยายความ เช่น หลักการ วิธียกตัวอย่าง หรือสิ่งที่นักเรียนควรรู้ต่อจากวิดีโอ"}">${escapeHtml(content.detailText || "")}</textarea></label>`
                   : `<input type="hidden" name="detailText" value="${escapeHtml(content.detailText || "")}" />`
               }
               <section class="cover-image-builder ${content.type === "fact" ? "fact-cover-builder" : ""}">

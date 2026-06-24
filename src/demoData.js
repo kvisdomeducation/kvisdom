@@ -141,6 +141,8 @@ export const DEMO_CONTENT = [
     thumbnailUrl: "/assets/kvisdom-roadshow-class.jpg",
     thumbnailPositionX: 50,
     thumbnailPositionY: 50,
+    detailText:
+      "ไฟล์นี้เป็น worksheet สั้นสำหรับใช้หลังหรือระหว่างกิจกรรม Rubber Band Car นักเรียนจะได้ร่างแบบรถ บันทึกจำนวนรอบที่หมุนยาง ระยะทางที่รถเคลื่อนที่ และเขียนข้อเสนอเพื่อปรับปรุงรอบทดลองถัดไป เหมาะสำหรับใช้เป็นใบงานในห้องเรียนหรือเป็นของแจกหลัง roadshow เพื่อให้นักเรียนกลับไปทดลองต่อเองได้",
     resourceFileName: "rubber-band-car-giveaway.txt",
     resourceFileUrl:
       "data:text/plain;charset=utf-8,Rubber%20Band%20Car%20Giveaway%20Sheet%0A1.%20Sketch%20your%20car%20design.%0A2.%20Record%20rubber%20band%20turns%20and%20distance.%0A3.%20Write%20one%20improvement%20for%20the%20next%20trial.",
