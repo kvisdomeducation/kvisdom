@@ -1305,7 +1305,6 @@ async function contentLessonPage(contentId) {
 function renderDownloadSidebar(item, subject, practiceQuizzes = []) {
   const fileName = item.resourceFileName || "";
   const fileUrl = item.resourceFileUrl || "";
-  const isHostedUpload = fileUrl.startsWith("data:");
   const resourceLabel = fileName || (isGoogleDriveUrl(fileUrl) ? "Google Drive" : "ไฟล์ประกอบ");
   return `
     <aside class="lesson-download-sidebar">
@@ -1315,9 +1314,12 @@ function renderDownloadSidebar(item, subject, practiceQuizzes = []) {
         <p>${item.type === "file" ? "เปิด worksheet, slide, PDF หรือของแจกได้จากหน้านี้โดยตรง ไม่ต้องเข้าไปในคลิปก่อน" : item.type === "fact" ? "เก็บรูป สรุป หรือ worksheet สั้น ๆ ไว้คู่กับเกร็ดวิทย์ เพื่อให้นักเรียนอ่านต่อได้ในหน้าเดียว" : "เก็บ worksheet, PDF, slide หรือรูปประกอบไว้คู่กับคลิป เพื่อให้นักเรียนเรียนต่อได้ในหน้าเดียว"}</p>
         ${
           fileUrl
-            ? isHostedUpload
-              ? `<a class="download-button" href="${escapeHtml(fileUrl)}" download="${escapeHtml(fileName || `${item.title}-resource`)}">ดาวน์โหลด ${escapeHtml(resourceLabel)}</a>`
-              : `<a class="download-button" href="${escapeHtml(fileUrl)}" target="_blank" rel="noopener">เปิด ${escapeHtml(resourceLabel)}</a>`
+            ? renderProtectedFileAction({
+                fileUrl,
+                resourceLabel,
+                downloadName: fileName || `${item.title}-resource`,
+                className: "download-button",
+              })
             : `<div class="download-empty"><strong>ยังไม่มีไฟล์ประกอบ</strong><span>${state.user?.role === "admin" ? "เพิ่มไฟล์ได้จากหน้าแก้ไขสื่อ" : item.type === "file" ? "ทีม Creator ยังไม่ได้แนบไฟล์นี้" : item.type === "fact" ? "ตอนนี้ดูเกร็ดวิทย์ได้ก่อน เมื่อทีมเพิ่มไฟล์จะดาวน์โหลดได้ตรงนี้" : "ตอนนี้ดูคลิปได้ก่อน เมื่อทีมเพิ่มไฟล์จะดาวน์โหลดได้ตรงนี้"}</span></div>`
         }
         <button type="button" data-nav="/subject/${subject.id}?type=${escapeHtml(item.type)}">กลับไปบทเรียนวิชานี้</button>
@@ -1725,7 +1727,6 @@ function renderQuestionImage(question, compact = false) {
 function renderLessonContent(item) {
   const type = getContentType(item.type);
   const fileUrl = item.resourceFileUrl || "";
-  const isHostedUpload = fileUrl.startsWith("data:");
   const resourceLabel = item.resourceFileName || (isGoogleDriveUrl(fileUrl) ? "Google Drive" : "ไฟล์");
   return `
     <article class="lesson-row" style="--subject: ${type.accent}">
@@ -1737,9 +1738,12 @@ function renderLessonContent(item) {
       <div class="lesson-meta">
         ${
           item.type === "file" && fileUrl
-            ? isHostedUpload
-              ? `<a class="button-link primary" href="${escapeHtml(fileUrl)}" download="${escapeHtml(item.resourceFileName || `${item.title}-file`)}">ดาวน์โหลด ${escapeHtml(resourceLabel)}</a>`
-              : `<a class="button-link primary" href="${escapeHtml(fileUrl)}" target="_blank" rel="noopener">เปิด ${escapeHtml(resourceLabel)}</a>`
+            ? renderProtectedFileAction({
+                fileUrl,
+                resourceLabel,
+                downloadName: item.resourceFileName || `${item.title}-file`,
+                className: "button-link primary",
+              })
             : `<button type="button" data-nav="/content/${escapeHtml(item.id)}">${item.type === "file" ? "ดูไฟล์" : item.type === "fact" ? "ดูเกร็ดวิทย์" : "ดูคลิป"}</button>`
         }
         ${item.type === "file" ? `<button type="button" data-nav="/content/${escapeHtml(item.id)}">รายละเอียด</button>` : ""}
@@ -1748,6 +1752,15 @@ function renderLessonContent(item) {
       </div>
     </article>
   `;
+}
+
+function renderProtectedFileAction({ fileUrl = "", resourceLabel = "ไฟล์", downloadName = "kvisdom-file", className = "download-button" } = {}) {
+  if (!state.user) {
+    return `<button type="button" class="${escapeHtml(className)}" data-nav="/login">เข้าสู่ระบบเพื่อเปิด ${escapeHtml(resourceLabel)}</button>`;
+  }
+  return fileUrl.startsWith("data:")
+    ? `<a class="${escapeHtml(className)}" href="${escapeHtml(fileUrl)}" download="${escapeHtml(downloadName)}">ดาวน์โหลด ${escapeHtml(resourceLabel)}</a>`
+    : `<a class="${escapeHtml(className)}" href="${escapeHtml(fileUrl)}" target="_blank" rel="noopener">เปิด ${escapeHtml(resourceLabel)}</a>`;
 }
 
 function renderQuizCard(quiz) {
