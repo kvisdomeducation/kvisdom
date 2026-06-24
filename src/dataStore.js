@@ -44,6 +44,11 @@ function readLocalState() {
       demoAdmin.onboardedAt = "2026-06-22T00:00:00.000Z";
       changed = true;
     }
+    const demoOsmosisQuiz = state.quizzes?.find((quiz) => quiz.id === "demo-osmosis");
+    if (demoOsmosisQuiz && demoOsmosisQuiz.contentId !== "clip-biology-osmosis") {
+      demoOsmosisQuiz.contentId = "clip-biology-osmosis";
+      changed = true;
+    }
     if (changed) writeLocalState(state);
     return state;
   }

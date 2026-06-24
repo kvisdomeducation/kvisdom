@@ -4,6 +4,7 @@ export const DEMO_QUIZZES = [
     title: "Cell Balance: Osmosis Quick Check",
     description: "ควิซสั้นจากแนว roadshow ชีววิทยา เรื่องน้ำ เกลือ และสมดุลของเซลล์",
     subject: "biology",
+    contentId: "clip-biology-osmosis",
     status: "published",
     createdAt: "2026-06-21T00:00:00.000Z",
     questions: [
@@ -135,7 +136,7 @@ export const DEMO_CONTENT = [
     id: "file-physics-giveaway",
     type: "file",
     title: "Rubber Band Car Giveaway Sheet",
-    description: "ไฟล์ worksheet และของแจกสำหรับกิจกรรมรถพลังยาง นักเรียนเปิดได้จากแท็บไฟล์โดยไม่ต้องเข้าไปในคลิป",
+    description: "worksheet และของแจกสำหรับกิจกรรมรถพลังยาง นักเรียนเปิดได้จากแท็บ Give Away&Unseen โดยไม่ต้องเข้าไปในคลิป",
     subject: "physics",
     url: "",
     thumbnailUrl: "/assets/kvisdom-roadshow-class.jpg",

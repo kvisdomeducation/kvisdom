@@ -26,7 +26,8 @@ if ("scrollRestoration" in history) {
 const CONTENT_TYPES = [
   { id: "quiz", label: "Quick quiz", thai: "Quick quiz", note: "ฝึกเร็วและเก็บ EXP", accent: "#11865b" },
   { id: "clip", label: "คลิป", thai: "คลิป", note: "ดูวิธีคิดจากพี่ KVIS", accent: "#5a35a8" },
-  { id: "file", label: "ไฟล์", thai: "ไฟล์", note: "ดาวน์โหลด worksheet, slide หรือของแจกได้ทันที", accent: "#2563eb" },
+  { id: "exercise", label: "Exercise", thai: "Exercise", note: "ไฟล์ Drive และควิซที่ผูกกับคลิป", accent: "#7c3aed" },
+  { id: "file", label: "Give Away&Unseen", thai: "Give Away&Unseen", note: "ของแจก worksheet และ unseen material", accent: "#2563eb" },
   { id: "fact", label: "เกร็ดวิทย์", thai: "เกร็ดวิทย์", note: "วิดีโอสั้นจาก Google Drive ที่ทำให้ STEM ใกล้ตัว", accent: "#0f766e" },
 ];
 
@@ -947,7 +948,7 @@ function pageShell(content) {
               ${isAdmin ? `<button type="button" data-nav="/admin">Creator</button>` : ""}
               ${isAdmin ? `<button type="button" data-nav="/admin/quizzes/new">+ Quick quiz</button>` : ""}
               ${isAdmin ? `<button type="button" data-nav="/admin/content/new?type=clip">+ คลิป</button>` : ""}
-              ${isAdmin ? `<button type="button" data-nav="/admin/content/new?type=file">+ ไฟล์</button>` : ""}
+              ${isAdmin ? `<button type="button" data-nav="/admin/content/new?type=file">+ Give Away&Unseen</button>` : ""}
               ${isAdmin ? `<button type="button" data-nav="/admin/content/new?type=fact">+ เกร็ดวิทย์</button>` : ""}
             </nav>
           </header>`
@@ -1106,8 +1107,10 @@ async function subjectStudyPage(subjectId) {
   const topicQuery = getRouteParams().get("q") || "";
   const filteredQuizzes = subjectQuizzes.filter((quiz) => matchesTopic(quiz, topicQuery));
   const filteredContent = subjectContent.filter((item) => matchesTopic(item, topicQuery));
+  const exerciseQuizzes = quizzes.filter((quiz) => quiz.subject === subject.id && quiz.contentId);
   const visibleQuizzes = activeType === "quiz" ? filteredQuizzes : [];
-  const visibleContent = filteredContent.filter((item) => item.type === activeType);
+  const visibleExerciseContent = activeType === "exercise" ? filteredContent.filter((item) => item.type === "clip") : [];
+  const visibleContent = activeType === "exercise" ? [] : filteredContent.filter((item) => item.type === activeType);
   const visibleTextContent = visibleContent.filter((item) => !isPreviewMedia(item));
   const activeMeta = CONTENT_FILTERS.find((type) => type.id === activeType) || CONTENT_FILTERS[0];
   const subjectNext = getSubjectNextAction(subject, subjectQuizzes, subjectContent, subjectAttempts);
@@ -1122,7 +1125,7 @@ async function subjectStudyPage(subjectId) {
           <div class="subject-main-row">
             <div>
               <h1>${subject.label}</h1>
-              <p>เลือกควิซ คลิป ไฟล์ หรือเกร็ดวิทย์ของวิชานี้</p>
+              <p>เลือกควิซ คลิป Exercise Give Away&Unseen หรือเกร็ดวิทย์ของวิชานี้</p>
             </div>
             <div class="subject-mini-stats">
               <span><strong>${subjectExp}</strong> EXP</span>
@@ -1144,7 +1147,7 @@ async function subjectStudyPage(subjectId) {
               <p class="eyebrow">${activeMeta.label || "เส้นทางเรียน"}</p>
               <h2>${activeMeta.thai}</h2>
             </div>
-            <span>${visibleQuizzes.length + visibleContent.length} รายการ</span>
+            <span>${visibleQuizzes.length + visibleContent.length + visibleExerciseContent.length} รายการ</span>
           </div>
           ${activeType === "clip" || activeType === "fact" ? mediaPreviewSection(visibleContent, subject.id, activeType) : ""}
           <section class="lesson-list">
@@ -1156,6 +1159,8 @@ async function subjectStudyPage(subjectId) {
                   : ""
             }
             ${visibleTextContent.length ? visibleTextContent.map(renderLessonContent).join("") : ""}
+            ${visibleExerciseContent.length ? visibleExerciseContent.map((item) => renderLessonExercise(item, exerciseQuizzes)).join("") : ""}
+            ${activeType === "exercise" && !visibleExerciseContent.length ? emptyMini(topicQuery ? "ไม่พบ Exercise ที่ตรงกับคำค้นนี้" : "ยังไม่มี Exercise ของวิชานี้", subject.id, "exercise") : ""}
           </section>
         </section>
       </section>
@@ -1183,9 +1188,9 @@ function studySequenceStrip(subject, quizzes, contentItems) {
       enabled: quizzes.length,
     },
     {
-      label: "รับไฟล์",
-      title: files.length ? "ดาวน์โหลดไฟล์" : "รอไฟล์จากทีม",
-      meta: files.length ? `${files.length} ไฟล์พร้อมเปิด` : "ยังไม่มีไฟล์",
+      label: "Give Away&Unseen",
+      title: files.length ? "เปิด Give Away&Unseen" : "รอ Give Away&Unseen จากทีม",
+      meta: files.length ? `${files.length} Give Away&Unseen พร้อมเปิด` : "ยังไม่มี Give Away&Unseen",
       nav: `/subject/${subject.id}?type=file`,
       enabled: files.length,
     },
@@ -1228,9 +1233,9 @@ function getSubjectNextAction(subject, quizzes, contentItems, attempts) {
   const fact = contentItems.find((item) => item.type === "fact");
   return {
     subject,
-    title: nextQuiz ? "ควิซถัดไปที่ควรทำ" : clip ? "เริ่มด้วยคลิปสั้น" : file ? "รับไฟล์ประกอบ" : fact ? "อ่านเกร็ดวิทย์ก่อน" : "เลือกบทเรียน",
-    description: nextQuiz?.description || clip?.description || file?.description || fact?.description || "เลือกจากควิซ คลิป ไฟล์ หรือเกร็ดวิทย์ด้านล่าง",
-    action: nextQuiz ? "ทำควิซนี้" : clip ? "ดูคลิป" : file ? "เปิดไฟล์" : "ดูบทเรียน",
+    title: nextQuiz ? "ควิซถัดไปที่ควรทำ" : clip ? "เริ่มด้วยคลิปสั้น" : file ? "เปิด Give Away&Unseen" : fact ? "อ่านเกร็ดวิทย์ก่อน" : "เลือกบทเรียน",
+    description: nextQuiz?.description || clip?.description || file?.description || fact?.description || "เลือกจากควิซ คลิป Exercise Give Away&Unseen หรือเกร็ดวิทย์ด้านล่าง",
+    action: nextQuiz ? "ทำควิซนี้" : clip ? "ดูคลิป" : file ? "เปิด Give Away&Unseen" : "ดูบทเรียน",
     nav: nextQuiz ? `/quiz/${nextQuiz.id}` : clip ? `/content/${clip.id}` : file ? `/content/${file.id}` : `/subject/${subject.id}`,
   };
 }
@@ -1302,15 +1307,131 @@ async function contentLessonPage(contentId) {
   `);
 }
 
+async function contentExercisePage(contentId) {
+  const [item, quizzes] = await Promise.all([
+    store.getContent(contentId),
+    store.listQuizzes({ includeDrafts: state.user?.role === "admin" }),
+  ]);
+  if (!item || item.type !== "clip") {
+    return pageShell(`
+      <main class="empty-state route-empty-state">
+        <p class="eyebrow">Exercise</p>
+        <h1>ไม่พบ Exercise ของคลิปนี้</h1>
+        <p>Exercise จะผูกกับคลิปเท่านั้น</p>
+        <button class="primary" type="button" data-nav="/">กลับหน้าแรก</button>
+      </main>
+    `);
+  }
+
+  const subject = getSubject(item.subject);
+  const type = getContentType(item.type);
+  const linkedQuizzes = quizzes.filter((quiz) => quiz.contentId === item.id && (state.user?.role === "admin" || quiz.status === "published"));
+  const fileUrl = item.resourceFileUrl || "";
+  const fileName = item.resourceFileName || "";
+  const resourceLabel = fileName || (isGoogleDriveUrl(fileUrl) ? "Google Drive exercise" : "ไฟล์ Exercise");
+  return pageShell(`
+    <main class="content-lesson-page" style="--subject: ${subject.accent}; --mode: ${type.accent}">
+      <section class="content-lesson-hero">
+        <div>
+          <button type="button" class="back-link" data-nav="/content/${escapeHtml(item.id)}">← กลับไปคลิป</button>
+          <p class="eyebrow">Clip exercise</p>
+          <h1>Exercise: ${escapeHtml(item.title)}</h1>
+          <p>${escapeHtml(item.description)}</p>
+        </div>
+        <span class="subject-accent-label">${subject.short}</span>
+      </section>
+      <section class="content-lesson-layout">
+        <article class="lesson-player-card">
+          ${renderExerciseClipContext(item)}
+          ${
+            item.detailText
+              ? `<section class="fact-detail-panel">
+                  <p class="eyebrow">คำอธิบาย Exercise</p>
+                  <h2>สิ่งที่ต้องทำหลังดูคลิป</h2>
+                  <p>${escapeHtml(item.detailText).replaceAll("\n", "<br>")}</p>
+                </section>`
+              : ""
+          }
+        </article>
+        <aside class="lesson-download-sidebar">
+          <section class="download-panel">
+            <p class="eyebrow">Exercise file</p>
+            <h2>ไฟล์จาก Drive</h2>
+            <p>เปิดโจทย์หรือ worksheet จาก Drive ที่ผูกกับคลิปนี้ ก่อนทำควิซต่อด้านล่าง</p>
+            ${
+              fileUrl
+                ? renderProtectedFileAction({
+                    fileUrl,
+                    resourceLabel,
+                    downloadName: fileName || `${item.title}-exercise`,
+                    className: "download-button",
+                  })
+                : `<div class="download-empty"><strong>ยังไม่มี Exercise file</strong><span>${state.user?.role === "admin" ? "เพิ่มลิงก์ Drive หรือไฟล์จากหน้าแก้ไขคลิป" : "ทีม Creator ยังไม่ได้แนบไฟล์สำหรับคลิปนี้"}</span></div>`
+            }
+            ${state.user?.role === "admin" ? `<button type="button" data-nav="/admin/content/${escapeHtml(item.id)}/edit">แก้ไขลิงก์ Exercise</button>` : ""}
+          </section>
+          <section class="download-panel practice-panel">
+            <p class="eyebrow">Exercise quiz</p>
+            <h2>ควิซของคลิปนี้</h2>
+            <p>ควิซเหล่านี้ถูกผูกกับคลิปนี้โดยตรง</p>
+            ${
+              linkedQuizzes.length
+                ? `<div class="practice-list">${linkedQuizzes
+                    .map(
+                      (quiz) => `
+                        <article>
+                          <div>
+                            <strong>${escapeHtml(displayText(quiz.title, "Exercise quiz"))}</strong>
+                            <span>${quiz.questions?.length || 0} ข้อ · ${scoreToExp((quiz.questions || []).reduce((total, question) => total + Number(question.points || 0), 0))} EXP</span>
+                          </div>
+                          <button type="button" data-nav="/quiz/${escapeHtml(quiz.id)}">ทำ Exercise</button>
+                        </article>
+                      `,
+                    )
+                    .join("")}</div>`
+                : `<div class="download-empty"><strong>ยังไม่มีควิซ Exercise</strong><span>${state.user?.role === "admin" ? "สร้างควิซใหม่แล้วระบบจะผูกกับคลิปนี้" : "ทีม Creator ยังไม่ได้เพิ่มควิซให้ Exercise นี้"}</span></div>`
+            }
+            ${state.user?.role === "admin" ? `<button type="button" data-nav="/admin/quizzes/new?contentId=${escapeHtml(item.id)}">+ สร้างควิซ Exercise</button>` : ""}
+          </section>
+        </aside>
+      </section>
+    </main>
+  `);
+}
+
+function renderExerciseClipContext(item) {
+  const youtubeId = getYouTubeId(item.url);
+  const coverUrl = getMediaCoverUrl(item);
+  return `
+    ${youtubeId ? renderYouTubeFrame(youtubeId, item.title) : renderMediaThumb({ coverUrl, title: item.title, type: item.type, positionStyle: coverPositionStyle(item) })}
+    <div class="lesson-player-meta">
+      <span class="lesson-kind">คลิปต้นทาง</span>
+      <h2>${escapeHtml(item.title)}</h2>
+      <p>${escapeHtml(item.description)}</p>
+      <button type="button" data-nav="/content/${escapeHtml(item.id)}">ดูคลิปเต็ม</button>
+    </div>
+  `;
+}
+
 function renderDownloadSidebar(item, subject, practiceQuizzes = []) {
   const fileName = item.resourceFileName || "";
   const fileUrl = item.resourceFileUrl || "";
   const resourceLabel = fileName || (isGoogleDriveUrl(fileUrl) ? "Google Drive" : "ไฟล์ประกอบ");
   return `
     <aside class="lesson-download-sidebar">
+      ${
+        item.type === "clip"
+          ? `<section class="download-panel">
+              <p class="eyebrow">Exercise</p>
+              <h2>ไฟล์ + ควิซของคลิปนี้</h2>
+              <p>เปิดหน้า Exercise เพื่อดูไฟล์ Drive และควิซที่ผูกกับคลิปนี้ในที่เดียว</p>
+              <button class="primary wide" type="button" data-nav="/content/${escapeHtml(item.id)}/exercise">ไปที่ Exercise</button>
+            </section>`
+          : ""
+      }
       <section class="download-panel">
         <p class="eyebrow">ไฟล์ประกอบ</p>
-        <h2>ดาวน์โหลดไฟล์</h2>
+        <h2>เปิด Give Away&Unseen</h2>
         <p>${item.type === "file" ? "เปิด worksheet, slide, PDF หรือของแจกได้จากหน้านี้โดยตรง ไม่ต้องเข้าไปในคลิปก่อน" : item.type === "fact" ? "เก็บรูป สรุป หรือ worksheet สั้น ๆ ไว้คู่กับเกร็ดวิทย์ เพื่อให้นักเรียนอ่านต่อได้ในหน้าเดียว" : "เก็บ worksheet, PDF, slide หรือรูปประกอบไว้คู่กับคลิป เพื่อให้นักเรียนเรียนต่อได้ในหน้าเดียว"}</p>
         ${
           fileUrl
@@ -1320,7 +1441,7 @@ function renderDownloadSidebar(item, subject, practiceQuizzes = []) {
                 downloadName: fileName || `${item.title}-resource`,
                 className: "download-button",
               })
-            : `<div class="download-empty"><strong>ยังไม่มีไฟล์ประกอบ</strong><span>${state.user?.role === "admin" ? "เพิ่มไฟล์ได้จากหน้าแก้ไขสื่อ" : item.type === "file" ? "ทีม Creator ยังไม่ได้แนบไฟล์นี้" : item.type === "fact" ? "ตอนนี้ดูเกร็ดวิทย์ได้ก่อน เมื่อทีมเพิ่มไฟล์จะดาวน์โหลดได้ตรงนี้" : "ตอนนี้ดูคลิปได้ก่อน เมื่อทีมเพิ่มไฟล์จะดาวน์โหลดได้ตรงนี้"}</span></div>`
+            : `<div class="download-empty"><strong>ยังไม่มีไฟล์ประกอบ</strong><span>${state.user?.role === "admin" ? "เพิ่มไฟล์ได้จากหน้าแก้ไขสื่อ" : item.type === "file" ? "ทีม Creator ยังไม่ได้แนบ Give Away&Unseen นี้" : item.type === "fact" ? "ตอนนี้ดูเกร็ดวิทย์ได้ก่อน เมื่อทีมเพิ่มไฟล์จะดาวน์โหลดได้ตรงนี้" : "ตอนนี้ดูคลิปได้ก่อน เมื่อทีมเพิ่มไฟล์จะดาวน์โหลดได้ตรงนี้"}</span></div>`
         }
         <button type="button" data-nav="/subject/${subject.id}?type=${escapeHtml(item.type)}">กลับไปบทเรียนวิชานี้</button>
         ${state.user?.role === "admin" ? `<button type="button" data-nav="/admin/content/${item.id}/edit">แก้ไขสื่อนี้</button>` : ""}
@@ -1506,10 +1627,13 @@ function renderCompactMediaItem(item) {
 
 function renderContentPrimaryAction(item) {
   if (item.type === "clip") {
-    return `<button type="button" class="primary" data-nav="/content/${escapeHtml(item.id)}">ดูคลิป</button>`;
+    return `
+      <button type="button" class="primary" data-nav="/content/${escapeHtml(item.id)}">ดูคลิป</button>
+      <button type="button" data-nav="/content/${escapeHtml(item.id)}/exercise">Exercise</button>
+    `;
   }
   if (item.type === "file") {
-    return `<button type="button" class="primary" data-nav="/content/${escapeHtml(item.id)}">เปิดไฟล์</button>`;
+    return `<button type="button" class="primary" data-nav="/content/${escapeHtml(item.id)}">เปิด Give Away&Unseen</button>`;
   }
   if (item.type === "fact") {
     return `<button type="button" class="primary" data-nav="/content/${escapeHtml(item.id)}">ดูเกร็ดวิทย์</button>`;
@@ -1596,7 +1720,7 @@ function getMediaCoverUrl(item) {
 
 function mediaActionLabel(item) {
   if (item.type === "clip") return "ดูคลิป";
-  if (item.type === "file") return item.resourceFileUrl ? "เปิดไฟล์" : "รอไฟล์";
+  if (item.type === "file") return item.resourceFileUrl ? "เปิด Give Away&Unseen" : "รอ Give Away&Unseen";
   if (getGoogleDrivePreviewUrl(item.url)) return "ดูวิดีโอ";
   return "เปิดสื่อ";
 }
@@ -1675,7 +1799,9 @@ function getContentType(typeId) {
 function contentTab(type, subjectId, activeType, quizzes, contentItems, query = "") {
   const count =
     type.id === "quiz"
-        ? quizzes.length
+      ? quizzes.length
+      : type.id === "exercise"
+        ? contentItems.filter((item) => item.type === "clip").length
         : contentItems.filter((item) => item.type === type.id).length;
   const nav = `/subject/${subjectId}${buildQuery({ type: type.id, q: query })}`;
   return `
@@ -1690,6 +1816,28 @@ function contentTab(type, subjectId, activeType, quizzes, contentItems, query = 
       <span>${type.thai}</span>
       <strong>${count}</strong>
     </button>
+  `;
+}
+
+function renderLessonExercise(item, quizzes = []) {
+  const type = getContentType("exercise");
+  const linkedQuizzes = quizzes.filter((quiz) => quiz.contentId === item.id);
+  const hasFile = Boolean(item.resourceFileUrl);
+  return `
+    <article class="lesson-row" style="--subject: ${type.accent}">
+      <span class="lesson-kind">${type.thai}</span>
+      <div>
+        <h2>Exercise: ${escapeHtml(item.title)}</h2>
+        <p>${escapeHtml(item.description)}</p>
+      </div>
+      <div class="lesson-meta">
+        <small>${hasFile ? "มีไฟล์ Drive" : "ยังไม่มี Give Away&Unseen"} · ${linkedQuizzes.length ? `${linkedQuizzes.length} ควิซ` : "ยังไม่มีควิซ"}</small>
+        <button type="button" class="primary" data-nav="/content/${escapeHtml(item.id)}/exercise">เปิด Exercise</button>
+        <button type="button" data-nav="/content/${escapeHtml(item.id)}">ดูคลิป</button>
+        ${state.user?.role === "admin" ? `<button type="button" data-nav="/admin/quizzes/new?contentId=${escapeHtml(item.id)}">+ ควิซ</button>` : ""}
+        ${state.user?.role === "admin" ? `<button type="button" data-nav="/admin/content/${escapeHtml(item.id)}/edit">แก้ไขไฟล์</button>` : ""}
+      </div>
+    </article>
   `;
 }
 
@@ -1744,7 +1892,7 @@ function renderLessonContent(item) {
                 downloadName: item.resourceFileName || `${item.title}-file`,
                 className: "button-link primary",
               })
-            : `<button type="button" data-nav="/content/${escapeHtml(item.id)}">${item.type === "file" ? "ดูไฟล์" : item.type === "fact" ? "ดูเกร็ดวิทย์" : "ดูคลิป"}</button>`
+            : `<button type="button" data-nav="/content/${escapeHtml(item.id)}">${item.type === "file" ? "ดู Give Away&Unseen" : item.type === "fact" ? "ดูเกร็ดวิทย์" : "ดูคลิป"}</button>`
         }
         ${item.type === "file" ? `<button type="button" data-nav="/content/${escapeHtml(item.id)}">รายละเอียด</button>` : ""}
         ${state.user?.role === "admin" ? `<button type="button" data-nav="/admin/content/${item.id}/edit">แก้ไข</button>` : ""}
@@ -1789,7 +1937,7 @@ function renderContentCard(item) {
       <span>${type.thai}</span>
       <h3>${item.title}</h3>
       <p>${item.description}</p>
-      ${item.type === "clip" ? `<button type="button" data-nav="/content/${escapeHtml(item.id)}">ดูคลิป</button>` : item.type === "fact" ? `<button type="button" data-nav="/content/${escapeHtml(item.id)}">ดูเกร็ดวิทย์</button>` : item.type === "file" ? `<button type="button" data-nav="/content/${escapeHtml(item.id)}">เปิดไฟล์</button>` : `<small>อ่านในห้องเรียน KVISdom</small>`}
+      ${item.type === "clip" ? `<button type="button" data-nav="/content/${escapeHtml(item.id)}">ดูคลิป</button>` : item.type === "fact" ? `<button type="button" data-nav="/content/${escapeHtml(item.id)}">ดูเกร็ดวิทย์</button>` : item.type === "file" ? `<button type="button" data-nav="/content/${escapeHtml(item.id)}">เปิด Give Away&Unseen</button>` : `<small>อ่านในห้องเรียน KVISdom</small>`}
     </article>
   `;
 }
@@ -1806,7 +1954,7 @@ function emptyMini(text, subjectId = "biology", kind = "all") {
     <article class="empty-mini guided-empty">
       <div>
         <strong>${text}</strong>
-        <p>${isAdmin ? "เพิ่มรายการใหม่เพื่อให้นักเรียนมีเส้นทางเรียนต่อเนื่อง" : "ลองเลือกคลิป Quick quiz ไฟล์ หรือเกร็ดวิทย์จากแท็บด้านบน"}</p>
+        <p>${isAdmin ? "เพิ่มรายการใหม่เพื่อให้นักเรียนมีเส้นทางเรียนต่อเนื่อง" : "ลองเลือกคลิป Quick quiz Give Away&Unseen หรือเกร็ดวิทย์จากแท็บด้านบน"}</p>
       </div>
       ${action}
     </article>
@@ -1819,7 +1967,7 @@ function adminTools(subjectId = "biology") {
       <span>เครื่องมือ Creator</span>
       <button class="primary" type="button" data-nav="/admin/quizzes/new">สร้างควิซ</button>
       <button type="button" data-nav="/admin/content/new?subject=${subjectId}&type=clip">สร้างคลิป</button>
-      <button type="button" data-nav="/admin/content/new?subject=${subjectId}&type=file">สร้างไฟล์</button>
+      <button type="button" data-nav="/admin/content/new?subject=${subjectId}&type=file">สร้าง Give Away&Unseen</button>
       <button type="button" data-nav="/admin/content/new?subject=${subjectId}&type=fact">สร้างเกร็ดวิทย์</button>
     </aside>
   `;
@@ -2007,7 +2155,7 @@ function createSearchEntries(quizzes = [], contentItems = []) {
     ...contentItems.map((item) => ({
       ...item,
       nav: `/content/${item.id}`,
-      cta: item.type === "clip" ? "ดูคลิป" : item.type === "file" ? "เปิดไฟล์" : "ดูเกร็ดวิทย์",
+      cta: item.type === "clip" ? "ดูคลิป" : item.type === "file" ? "เปิด Give Away&Unseen" : "ดูเกร็ดวิทย์",
     })),
   ];
 }
@@ -2508,7 +2656,7 @@ async function adminPage() {
         <div class="page-actions">
           <button class="primary" type="button" data-nav="/admin/quizzes/new">สร้างควิซ</button>
           <button type="button" data-nav="/admin/content/new?type=clip">สร้างคลิป</button>
-          <button type="button" data-nav="/admin/content/new?type=file">สร้างไฟล์</button>
+          <button type="button" data-nav="/admin/content/new?type=file">สร้าง Give Away&Unseen</button>
           <button type="button" data-nav="/admin/content/new?type=fact">สร้างเกร็ดวิทย์</button>
         </div>
       </section>
@@ -2527,7 +2675,7 @@ async function adminPage() {
       <section class="section-head compact">
         <div>
           <p class="eyebrow">สื่อเรียนรู้</p>
-          <h2>จัดการคลิป ไฟล์ และเกร็ดวิทย์</h2>
+          <h2>จัดการคลิป Give Away&Unseen และเกร็ดวิทย์</h2>
         </div>
       </section>
       <section class="quiz-grid">
@@ -2581,7 +2729,7 @@ function renderAdminContentCard(item) {
       <h2>${escapeHtml(displayText(item.title, "สื่อยังไม่ตั้งชื่อ"))}</h2>
       <p>${escapeHtml(displayText(item.description, "ยังไม่มีคำอธิบาย"))}</p>
       <div class="admin-card-readiness ${errors.length ? "not-ready" : isDraft ? "draft-ready" : "ready"}">
-        <strong>${errors.length ? `${errors.length} จุดที่ต้องแก้` : item.type === "file" ? "ไฟล์พร้อมเปิด" : item.type === "fact" ? "Google Drive video" : "คลิปพร้อมดู"}</strong>
+        <strong>${errors.length ? `${errors.length} จุดที่ต้องแก้` : item.type === "file" ? "Give Away&Unseen พร้อมเปิด" : item.type === "fact" ? "Google Drive video" : "คลิปพร้อมดู"}</strong>
         <small>${item.type === "file" ? mediaActionLabel(item) : item.url ? mediaActionLabel(item) : "ยังไม่มีลิงก์สื่อ"}</small>
       </div>
       <div class="card-actions">
@@ -2789,23 +2937,23 @@ function contentCreatorCopy(type = "clip", isEditing = false) {
   const isFile = type === "file";
   return {
     eyebrow: isFile ? "Student file" : isFact ? "Google Drive fact video" : "YouTube clip",
-    heading: isEditing ? (isFile ? "แก้ไขไฟล์" : isFact ? "แก้ไขเกร็ดวิทย์" : "แก้ไขคลิป") : isFile ? "สร้างไฟล์" : isFact ? "สร้างเกร็ดวิทย์" : "สร้างคลิป",
-    titleLabel: isFile ? "ชื่อไฟล์" : isFact ? "ชื่อเกร็ดวิทย์" : "ชื่อคลิป",
+    heading: isEditing ? (isFile ? "แก้ไข Give Away&Unseen" : isFact ? "แก้ไขเกร็ดวิทย์" : "แก้ไขคลิป") : isFile ? "สร้าง Give Away&Unseen" : isFact ? "สร้างเกร็ดวิทย์" : "สร้างคลิป",
+    titleLabel: isFile ? "ชื่อ Give Away&Unseen" : isFact ? "ชื่อเกร็ดวิทย์" : "ชื่อคลิป",
     titlePlaceholder: isFile ? "เช่น Worksheet รถพลังยาง" : isFact ? "เช่น ทำไมวิ่งแล้วเหนื่อยช้าลง" : "เช่น วิธีคิดโจทย์แรงเสียดทาน",
     descriptionPlaceholder: isFile ? "บอกนักเรียนว่าไฟล์นี้ใช้ทำอะไร หรือเป็นของแจกแบบไหน" : isFact ? "สรุปว่าวิดีโอสั้นนี้ทำให้นักเรียนเข้าใจเรื่องอะไร" : "บอกนักเรียนว่าคลิปนี้ช่วยให้เข้าใจอะไร",
     urlLabel: isFile ? "ลิงก์อ้างอิงเพิ่มเติม (ไม่บังคับ)" : isFact ? "ลิงก์วิดีโอ Google Drive" : "ลิงก์วิดีโอ",
     urlPlaceholder: isFile ? "วางลิงก์หน้าอธิบายเพิ่มเติมถ้ามี" : isFact ? "วางลิงก์ Google Drive ที่ตั้งค่า Anyone with the link can view" : "วางลิงก์ YouTube",
-    thumbnailLabel: isFile ? "ภาพปกไฟล์" : isFact ? "ภาพปกเกร็ดวิทย์" : "ภาพปกคลิป",
+    thumbnailLabel: isFile ? "ภาพปก Give Away&Unseen" : isFact ? "ภาพปกเกร็ดวิทย์" : "ภาพปกคลิป",
     coverHelp: isFact
       ? "ไม่จำเป็นต้องอัปโหลด ถ้า Google Drive สร้าง thumbnail ได้ ใช้อัปโหลดเฉพาะตอนอยากครอบภาพเอง"
       : isFile
         ? "อัปโหลดภาพปกถ้าอยากให้ไฟล์ดูชัดในหน้าเรียน ขนาดไฟล์ไม่เกิน 2 MB"
       : "อัปโหลดภาพปกถ้า preview จาก YouTube ไม่ตรง ขนาดไฟล์ไม่เกิน 2 MB",
-    previewLabel: isFile ? "ตัวอย่างไฟล์" : isFact ? "ตัวอย่างเกร็ดวิทย์" : "ตัวอย่างคลิป",
+    previewLabel: isFile ? "ตัวอย่าง Give Away&Unseen" : isFact ? "ตัวอย่างเกร็ดวิทย์" : "ตัวอย่างคลิป",
     previewDescription: isFact
       ? "ใส่ชื่อ คำอธิบาย และลิงก์ Google Drive ระบบจะดึง thumbnail มาเป็นภาพปกให้อัตโนมัติ"
       : isFile
-        ? "ใส่ชื่อ คำอธิบาย และแนบไฟล์ เพื่อให้นักเรียนเปิดได้จากแท็บไฟล์ทันที"
+        ? "ใส่ชื่อ คำอธิบาย และแนบไฟล์ เพื่อให้นักเรียนเปิดได้จากแท็บ Give Away&Unseen ทันที"
       : "ใส่ชื่อ คำอธิบาย และลิงก์ YouTube เพื่อดู preview ก่อนบันทึก",
   };
 }
@@ -2848,7 +2996,7 @@ async function contentEditorPage(contentId = "new") {
                 <div class="fixed-type-field">
                   <span>ประเภท</span>
                   <strong>${content.type === "file" ? "ไฟล์" : content.type === "fact" ? "เกร็ดวิทย์" : "คลิป"}</strong>
-                  <small>${content.type === "file" ? "สร้างจากปุ่ม + ไฟล์" : content.type === "fact" ? "สร้างจากปุ่ม + เกร็ดวิทย์" : "สร้างจากปุ่ม + คลิป"}</small>
+                  <small>${content.type === "file" ? "สร้างจากปุ่ม + Give Away&Unseen" : content.type === "fact" ? "สร้างจากปุ่ม + เกร็ดวิทย์" : "สร้างจากปุ่ม + คลิป"}</small>
                 </div>
                 <label>วิชา
                   <select name="subject">
@@ -2861,7 +3009,7 @@ async function contentEditorPage(contentId = "new") {
               <label><span data-url-label>${copy.urlLabel}</span><input name="url" value="${escapeHtml(content.url)}" placeholder="${copy.urlPlaceholder}" /></label>
               ${
                 content.type === "fact" || content.type === "file"
-                  ? `<label>${content.type === "file" ? "รายละเอียดแบบยาวของไฟล์" : "ข้อมูลเพิ่มเติม"}<textarea name="detailText" placeholder="${content.type === "file" ? "เขียนย่อหน้ายาวว่าไฟล์นี้คืออะไร ใช้ตอนไหน มีอะไรอยู่ข้างใน และนักเรียนควรทำอะไรหลังเปิดไฟล์" : "เขียนย่อหน้าขยายความ เช่น หลักการ วิธียกตัวอย่าง หรือสิ่งที่นักเรียนควรรู้ต่อจากวิดีโอ"}">${escapeHtml(content.detailText || "")}</textarea></label>`
+                  ? `<label>${content.type === "file" ? "รายละเอียดแบบยาวของ Give Away&Unseen" : "ข้อมูลเพิ่มเติม"}<textarea name="detailText" placeholder="${content.type === "file" ? "เขียนย่อหน้ายาวว่าไฟล์นี้คืออะไร ใช้ตอนไหน มีอะไรอยู่ข้างใน และนักเรียนควรทำอะไรหลังเปิด Give Away&Unseen" : "เขียนย่อหน้าขยายความ เช่น หลักการ วิธียกตัวอย่าง หรือสิ่งที่นักเรียนควรรู้ต่อจากวิดีโอ"}">${escapeHtml(content.detailText || "")}</textarea></label>`
                   : `<input type="hidden" name="detailText" value="${escapeHtml(content.detailText || "")}" />`
               }
               <section class="cover-image-builder ${content.type === "fact" ? "fact-cover-builder" : ""}">
@@ -2880,7 +3028,7 @@ async function contentEditorPage(contentId = "new") {
                   ${
                     content.thumbnailUrl
                       ? `<img src="${escapeHtml(content.thumbnailUrl)}" alt="" style="${coverPositionStyle(content)}" /><button type="button" data-action="remove-content-cover">ลบภาพปก</button>`
-                      : `<span>${content.type === "file" ? "ยังไม่มีภาพปกไฟล์" : content.type === "fact" ? "ยังไม่มีภาพปกเกร็ดวิทย์" : "ยังไม่มีภาพปก"}</span>`
+                      : `<span>${content.type === "file" ? "ยังไม่มีภาพปก Give Away&Unseen" : content.type === "fact" ? "ยังไม่มีภาพปกเกร็ดวิทย์" : "ยังไม่มีภาพปก"}</span>`
                   }
                 </div>
                 ${
@@ -2935,7 +3083,7 @@ async function contentEditorPage(contentId = "new") {
                       : `<span>ยังไม่มีไฟล์ประกอบ</span>`
                   }
                 </div>
-                <small class="image-upload-message" data-resource-file-message>${content.type === "file" ? "จำเป็นสำหรับไฟล์ที่เผยแพร่: อัปโหลดไฟล์หรือวางลิงก์ที่นักเรียนเปิดได้" : "แนะนำ: ใช้ Google Drive สำหรับไฟล์ใหญ่ และตั้ง permission เป็น Anyone with the link can view"}</small>
+                <small class="image-upload-message" data-resource-file-message>${content.type === "file" ? "จำเป็นสำหรับ Give Away&Unseen ที่เผยแพร่: อัปโหลดไฟล์หรือวางลิงก์ที่นักเรียนเปิดได้" : "แนะนำ: ใช้ Google Drive สำหรับไฟล์ใหญ่ และตั้ง permission เป็น Anyone with the link can view"}</small>
               </section>
               <label>สถานะ
                 <select name="status">
@@ -3097,6 +3245,7 @@ async function render() {
     else if (route === "/search") app.innerHTML = await searchPage();
     else if (route === "/subjects") app.innerHTML = await subjectsPage();
     else if (route.startsWith("/subject/")) app.innerHTML = await subjectStudyPage(route.split("/")[2]);
+    else if (route.startsWith("/content/") && route.endsWith("/exercise")) app.innerHTML = await contentExercisePage(route.split("/")[2]);
     else if (route.startsWith("/content/")) app.innerHTML = await contentLessonPage(route.split("/")[2]);
     else if (route === "/quizzes") app.innerHTML = await quizzesPage();
     else if (route === "/profile") app.innerHTML = await profilePage();
@@ -3670,7 +3819,7 @@ function updateContentCoverPreview(form) {
           ? `<button type="button" data-action="remove-content-cover">ลบภาพปก</button>`
           : `<span class="auto-cover-note">ใช้ thumbnail จาก Google Drive</span>`
       }`
-    : `<span>${type === "file" ? "ยังไม่มีภาพปกไฟล์" : type === "fact" ? "ยังไม่มีภาพปกเกร็ดวิทย์" : "ยังไม่มีภาพปก"}</span>`;
+    : `<span>${type === "file" ? "ยังไม่มีภาพปก Give Away&Unseen" : type === "fact" ? "ยังไม่มีภาพปกเกร็ดวิทย์" : "ยังไม่มีภาพปก"}</span>`;
   preview.querySelector('[data-action="remove-content-cover"]')?.addEventListener("click", () => {
     const hidden = form.querySelector('input[name="thumbnailUrl"]');
     const fileInput = form.querySelector('[data-action="content-cover-image"]');
@@ -3902,7 +4051,7 @@ function updateCreatorPreview() {
   if (status) {
     status.textContent = type === "file"
       ? resourceFileUrl
-        ? "ไฟล์นี้จะเปิดได้จากแท็บไฟล์โดยตรง"
+        ? "รายการนี้จะเปิดได้จากแท็บ Give Away&Unseen โดยตรง"
         : "ต้องแนบไฟล์หรือวางลิงก์ไฟล์ก่อนเผยแพร่"
       : youtubeId
       ? "พร้อมเล่น YouTube ในหน้า KVISdom"
