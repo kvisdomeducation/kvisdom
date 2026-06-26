@@ -392,6 +392,11 @@ function scoreToExp(score = 0) {
   return Number(score || 0) * EXP_PER_POINT;
 }
 
+function formatNewsDate(value = "") {
+  if (!value) return "ยังไม่เผยแพร่";
+  return new Date(value).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" });
+}
+
 function getExpProgress(totalExp = 0) {
   const level = Math.floor(totalExp / EXP_PER_LEVEL) + 1;
   const currentLevelExp = totalExp % EXP_PER_LEVEL;
@@ -950,6 +955,7 @@ function pageShell(content) {
               ${isAdmin ? `<button type="button" data-nav="/admin/content/new?type=clip">+ คลิป</button>` : ""}
               ${isAdmin ? `<button type="button" data-nav="/admin/content/new?type=file">+ Give Away&Unseen</button>` : ""}
               ${isAdmin ? `<button type="button" data-nav="/admin/content/new?type=fact">+ เกร็ดวิทย์</button>` : ""}
+              ${isAdmin ? `<button type="button" data-nav="/admin/news/new">+ ข่าว</button>` : ""}
             </nav>
           </header>`
     }
@@ -980,7 +986,13 @@ function learningStats(quizzes, attempts, contentItems) {
 }
 
 async function homePage() {
-  const [quizzes, attempts, contentItems] = await Promise.all([store.listQuizzes(), store.listAttempts(), store.listContent()]);
+  const [quizzes, attempts, contentItems, newsItems, unreadNewsCount] = await Promise.all([
+    store.listQuizzes(),
+    store.listAttempts(),
+    store.listContent(),
+    store.listNews().catch(() => []),
+    store.getUnreadNewsCount().catch(() => 0),
+  ]);
   const totalExp = totalAttemptExp(attempts);
   const expProgress = getExpProgress(totalExp);
   const badges = getAchievementBadges(attempts);
@@ -1011,28 +1023,84 @@ async function homePage() {
             <span>${unlockedBadges}/${badges.length} badges</span>
           </div>
         </div>
-        <div class="home-subject-panel" aria-label="วิชาหลักใน KVISdom">
-          <div class="home-subject-head">
-            <p class="eyebrow">เลือกวิชา</p>
-            <h2>วันนี้อยากฝึกวิชาไหน?</h2>
+        <div class="home-right-rail">
+          ${renderHomeNewsPanel(newsItems, unreadNewsCount, { compact: true })}
+          <div class="home-subject-panel" aria-label="วิชาหลักใน KVISdom">
+            <div class="home-subject-head">
+              <p class="eyebrow">เลือกวิชา</p>
+              <h2>วันนี้อยากฝึกวิชาไหน?</h2>
+            </div>
+            ${SUBJECTS.map(
+              (subject) => {
+                const quizCount = quizzes.filter((quiz) => quiz.subject === subject.id).length;
+                const contentCount = contentItems.filter((item) => item.subject === subject.id).length;
+                return `
+                <button type="button" class="home-subject-card" data-nav="/subject/${subject.id}" style="--subject: ${subject.accent}">
+                  <span>${subject.short}</span>
+                  <strong>${subject.label}</strong>
+                  <small>${quizCount} ควิซ · ${contentCount} สื่อเรียนรู้</small>
+                </button>
+              `;
+              },
+            ).join("")}
           </div>
-          ${SUBJECTS.map(
-            (subject) => {
-              const quizCount = quizzes.filter((quiz) => quiz.subject === subject.id).length;
-              const contentCount = contentItems.filter((item) => item.subject === subject.id).length;
-              return `
-              <button type="button" class="home-subject-card" data-nav="/subject/${subject.id}" style="--subject: ${subject.accent}">
-                <span>${subject.short}</span>
-                <strong>${subject.label}</strong>
-                <small>${quizCount} ควิซ · ${contentCount} สื่อเรียนรู้</small>
-              </button>
-            `;
-            },
-          ).join("")}
         </div>
       </section>
     </main>
   `);
+}
+
+function renderHomeNewsPanel(newsItems = [], unreadCount = 0, { compact = false } = {}) {
+  const featuredNews = newsItems.slice(0, compact ? 1 : 3);
+  return `
+    <section class="home-news-panel ${compact ? "is-compact" : ""}" aria-label="ข่าวและประกาศจาก KVISdom">
+      <div class="home-news-head">
+        <div>
+          <p class="eyebrow">${compact ? "Latest" : "News center"}</p>
+          <h2>${compact ? "อัปเดตล่าสุด" : "ข่าวและประกาศ"}</h2>
+          <p>${compact ? "ประกาศสั้น ๆ ที่ควรรู้ก่อนเริ่มเรียนวันนี้" : "อัปเดตจากทีม Creator, Exercise ใหม่, ของแจก และประกาศสำคัญสำหรับนักเรียน"}</p>
+        </div>
+        <div class="news-count-pill ${unreadCount ? "has-unread" : ""}">
+          <strong>${unreadCount}</strong>
+          <span>ยังไม่ได้อ่าน</span>
+        </div>
+      </div>
+      ${
+        featuredNews.length
+          ? `<div class="home-news-grid">${featuredNews.map(renderHomeNewsCard).join("")}</div>`
+          : `<article class="empty-mini guided-empty">
+              <div>
+                <strong>ยังไม่มีประกาศใหม่</strong>
+                <p>เมื่อทีม Creator เพิ่มข่าว นักเรียนจะเห็นอัปเดตตรงนี้บนหน้าแรก</p>
+              </div>
+              ${state.user?.role === "admin" ? `<button class="primary" type="button" data-nav="/admin">ไป Creator</button>` : ""}
+            </article>`
+      }
+    </section>
+  `;
+}
+
+function renderHomeNewsCard(item) {
+  const isHighPriority = item.priority === "high";
+  return `
+    <article class="home-news-card ${isHighPriority ? "high-priority" : ""}">
+      ${
+        item.imageUrl
+          ? `<div class="home-news-image"><img src="${escapeHtml(item.imageUrl)}" alt="" loading="lazy" /></div>`
+          : ""
+      }
+      <div class="news-card-topline">
+        <span>${isHighPriority ? "สำคัญ" : item.audience === "student" ? "นักเรียน" : "ประกาศ"}</span>
+        <small>${formatNewsDate(item.publishedAt || item.createdAt)}</small>
+      </div>
+      <h3>${escapeHtml(item.title)}</h3>
+      <p>${escapeHtml(item.summary || item.body)}</p>
+      <div class="news-card-actions">
+        ${item.actionUrl ? `<button class="primary" type="button" data-nav="${escapeHtml(item.actionUrl)}">${escapeHtml(item.actionLabel || "เปิดดู")}</button>` : ""}
+        ${state.user ? `<button type="button" data-action="mark-news-read" data-news-id="${escapeHtml(item.id)}">อ่านแล้ว</button>` : `<button type="button" data-nav="/login">เข้าสู่ระบบเพื่อรับแจ้งเตือน</button>`}
+      </div>
+    </article>
+  `;
 }
 
 async function subjectsPage() {
@@ -2643,7 +2711,11 @@ async function adminPage() {
     `);
   }
 
-  const [quizzes, contentItems] = await Promise.all([store.listQuizzes({ includeDrafts: true }), store.listContent({ includeDrafts: true })]);
+  const [quizzes, contentItems, newsItems] = await Promise.all([
+    store.listQuizzes({ includeDrafts: true }),
+    store.listContent({ includeDrafts: true }),
+    store.listNews({ includeDrafts: true }),
+  ]);
   const polishItems = getCreatorPolishItems(quizzes, contentItems);
   return pageShell(`
     <main>
@@ -2658,11 +2730,22 @@ async function adminPage() {
           <button type="button" data-nav="/admin/content/new?type=clip">สร้างคลิป</button>
           <button type="button" data-nav="/admin/content/new?type=file">สร้าง Give Away&Unseen</button>
           <button type="button" data-nav="/admin/content/new?type=fact">สร้างเกร็ดวิทย์</button>
+          <button type="button" data-nav="/admin/news/new">สร้างข่าว</button>
         </div>
       </section>
-      ${creatorOverview(quizzes, contentItems, polishItems)}
+      ${creatorOverview(quizzes, contentItems, polishItems, newsItems)}
       ${renderAchievementBoard(BADGE_CATALOG.map((badge) => ({ ...badge, unlocked: true, progressText: "" })), { admin: true, compact: true })}
       ${creatorPolishQueue(polishItems)}
+      <section class="section-head compact">
+        <div>
+          <p class="eyebrow">News center</p>
+          <h2>จัดการข่าวและประกาศ</h2>
+        </div>
+        <button type="button" data-nav="/admin/news/new">+ สร้างข่าว</button>
+      </section>
+      <section class="quiz-grid creator-news-grid">
+        ${newsItems.map(renderAdminNewsCard).join("") || `<article class="empty-mini"><p>ยังไม่มีข่าวหรือประกาศ</p></article>`}
+      </section>
       <section class="section-head compact">
         <div>
           <p class="eyebrow">ควิซ</p>
@@ -2683,6 +2766,34 @@ async function adminPage() {
       </section>
     </main>
   `);
+}
+
+function renderAdminNewsCard(item) {
+  const isDraft = item.status !== "published";
+  const hasImage = Boolean(item.imageUrl);
+  const title = displayText(item.title, "ข่าวยังไม่ตั้งชื่อ");
+  const description = displayText(item.summary, "ยังไม่มี short description");
+  return `
+    <article class="quiz-card admin-quiz-card admin-news-card ${isDraft ? "needs-work" : ""}">
+      <div class="card-line">
+        <span class="subject-pill">${item.priority === "high" ? "สำคัญ" : "News"}</span>
+        <span class="status-pill">${isDraft ? "ฉบับร่าง" : "เผยแพร่แล้ว"}</span>
+      </div>
+      <div class="admin-news-thumb ${hasImage ? "has-image" : ""}">
+        ${hasImage ? `<img src="${escapeHtml(item.imageUrl)}" alt="" loading="lazy" />` : `<span>ยังไม่มีรูปข่าว</span>`}
+      </div>
+      <h2>${escapeHtml(title)}</h2>
+      <p>${escapeHtml(description)}</p>
+      <div class="admin-card-readiness ${isDraft ? "draft-ready" : "ready"}">
+        <strong>${item.audience === "student" ? "สำหรับนักเรียน" : item.audience === "creator" ? "สำหรับ Creator" : "ทุกคนเห็นได้"}</strong>
+        <small>${formatNewsDate(item.publishedAt || item.createdAt)}</small>
+      </div>
+      <div class="card-actions">
+        <button type="button" data-nav="/admin/news/${item.id}/edit">แก้ไข</button>
+        <button class="danger-button" type="button" data-action="delete-news" data-news-id="${escapeHtml(item.id)}" data-delete-title="${escapeHtml(title)}">ลบ</button>
+      </div>
+    </article>
+  `;
 }
 
 function renderAdminQuizCard(quiz) {
@@ -2762,7 +2873,7 @@ function getCreatorPolishItems(quizzes, contentItems) {
   return [...draftQuizzes, ...contentNeedsCover].slice(0, 4);
 }
 
-function creatorOverview(quizzes, contentItems, polishItems) {
+function creatorOverview(quizzes, contentItems, polishItems, newsItems = []) {
   const publishedQuizzes = quizzes.filter((quiz) => quiz.status === "published" && !validateQuizDraft(quiz).length).length;
   const draftQuizzes = quizzes.filter((quiz) => quiz.status !== "published" || validateQuizDraft(quiz).length).length;
   const publishedContent = contentItems.filter((item) => item.status === "published" && !validateContentDraft(item).length).length;
@@ -2783,6 +2894,10 @@ function creatorOverview(quizzes, contentItems, polishItems) {
       <article>
         <span>${polishItems.length}</span>
         <p>งานในคิวตรวจ</p>
+      </article>
+      <article>
+        <span>${newsItems.filter((item) => item.status === "published").length}</span>
+        <p>ข่าวที่เปิดอยู่</p>
       </article>
     </section>
   `;
@@ -2818,6 +2933,112 @@ function creatorPolishQueue(items) {
       }
     </section>
   `;
+}
+
+function validateNewsDraft(news) {
+  const errors = [];
+  if (!news.title?.toString().trim()) errors.push("ต้องมีหัวข้อข่าว");
+  if (!news.summary?.toString().trim()) errors.push("ต้องมี short description");
+  if (!news.body?.toString().trim()) errors.push("ต้องมีรายละเอียดแบบยาว");
+  if (news.actionUrl && !news.actionLabel?.toString().trim()) errors.push("ถ้ามีลิงก์ ต้องตั้งชื่อปุ่มด้วย");
+  return errors;
+}
+
+async function newsEditorPage(newsId = "new") {
+  if (!state.user || state.user.role !== "admin") return adminPage();
+  const existing = newsId === "new" ? null : await store.getNews(newsId);
+  const news = existing || {
+    id: "",
+    title: "",
+    summary: "",
+    body: "",
+    imageUrl: "",
+    audience: "all",
+    priority: "normal",
+    status: "draft",
+    actionLabel: "",
+    actionUrl: "",
+    publishedAt: "",
+  };
+  const errors = validateNewsDraft(news);
+  return pageShell(`
+    <main class="builder">
+      <form data-form="save-news" class="builder-form">
+        <input type="hidden" name="id" value="${escapeHtml(news.id)}" />
+        <input type="hidden" name="imageUrl" value="${escapeHtml(news.imageUrl || "")}" />
+        <input type="hidden" name="publishedAt" value="${escapeHtml(news.publishedAt || "")}" />
+        <input type="hidden" name="createdAt" value="${escapeHtml(news.createdAt || "")}" />
+        <section class="builder-studio news-studio">
+          <div class="builder-main-column">
+            <section class="form-title-card news-editor">
+              <div class="builder-topline"></div>
+              <p class="eyebrow">News center</p>
+              <h1>${news.id ? "แก้ไขข่าว" : "สร้างข่าวใหม่"}</h1>
+              <label>หัวข้อข่าว<input name="title" required value="${escapeHtml(news.title)}" placeholder="เช่น เปิดชุด Exercise ใหม่ประจำสัปดาห์นี้" /></label>
+              <label>Short description<textarea name="summary" required placeholder="สรุปสั้น ๆ ที่นักเรียนอ่านแล้วเข้าใจทันที">${escapeHtml(news.summary || "")}</textarea></label>
+              <label>รายละเอียดแบบยาว<textarea name="body" required placeholder="เขียนย่อหน้าหลักว่าเรื่องนี้คืออะไร สำคัญอย่างไร และนักเรียนควรทำอะไรต่อ">${escapeHtml(news.body || "")}</textarea></label>
+              <section class="cover-image-builder news-image-builder">
+                <div>
+                  <p class="eyebrow">รูปข่าว</p>
+                  <p>อัปโหลดภาพสำหรับประกาศ ขนาดไฟล์ไม่เกิน 2 MB ภาพนี้จะแสดงบนหน้าแรก</p>
+                </div>
+                <label class="image-upload-control">
+                  <span>${news.imageUrl ? "เปลี่ยนรูปข่าว" : "อัปโหลดรูปข่าว"}</span>
+                  <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-action="news-image" />
+                </label>
+                <div class="news-image-preview ${news.imageUrl ? "has-image" : ""}" data-news-image-preview>
+                  ${news.imageUrl ? `<img src="${escapeHtml(news.imageUrl)}" alt="" /><button type="button" data-action="remove-news-image">ลบรูปข่าว</button>` : `<span>ยังไม่มีรูปข่าว</span>`}
+                </div>
+                <small class="image-upload-message" data-news-image-message>ใช้ภาพที่เห็นเนื้อหาชัด ไม่มืดหรือครอปจนอ่านยาก</small>
+              </section>
+              <div class="form-grid">
+                <label>กลุ่มผู้เห็น
+                  <select name="audience">
+                    <option value="all" ${news.audience === "all" ? "selected" : ""}>ทุกคน</option>
+                    <option value="student" ${news.audience === "student" ? "selected" : ""}>นักเรียน</option>
+                    <option value="creator" ${news.audience === "creator" ? "selected" : ""}>Creator เท่านั้น</option>
+                  </select>
+                </label>
+                <label>ความสำคัญ
+                  <select name="priority">
+                    <option value="normal" ${news.priority === "normal" ? "selected" : ""}>ปกติ</option>
+                    <option value="high" ${news.priority === "high" ? "selected" : ""}>สำคัญ</option>
+                  </select>
+                </label>
+              </div>
+              <div class="form-grid">
+                <label>ชื่อปุ่ม action<input name="actionLabel" value="${escapeHtml(news.actionLabel || "")}" placeholder="เช่น ไปดู Exercise" /></label>
+                <label>ลิงก์ action<input name="actionUrl" value="${escapeHtml(news.actionUrl || "")}" placeholder="/subject/biology?type=exercise หรือ https://..." /></label>
+              </div>
+              <label>สถานะ
+                <select name="status">
+                  <option value="draft" ${news.status === "draft" ? "selected" : ""}>ฉบับร่าง</option>
+                  <option value="published" ${news.status === "published" ? "selected" : ""}>เผยแพร่</option>
+                </select>
+              </label>
+              <div class="content-readiness-output news-readiness-output">
+                ${errors.length ? `<ul class="readiness-list">${errors.map((error) => `<li>${escapeHtml(error)}</li>`).join("")}</ul>` : ""}
+              </div>
+            </section>
+          </div>
+          <aside class="creator-side-panel">
+            <section class="creator-preview news-live-preview" aria-live="polite">
+              <p class="eyebrow">ตัวอย่างบนหน้าแรก</p>
+              <div class="news-preview-card">
+                ${renderHomeNewsCard(news)}
+              </div>
+            </section>
+            ${
+              news.id
+                ? `<button class="danger-button wide" type="button" data-action="delete-news" data-news-id="${escapeHtml(news.id)}" data-delete-title="${escapeHtml(displayText(news.title, "ข่าวนี้"))}">ลบข่าว</button>`
+                : ""
+            }
+            <button class="primary wide" type="submit">${news.status === "published" ? "เผยแพร่ข่าว" : "บันทึกฉบับร่าง"}</button>
+          </aside>
+        </section>
+      </form>
+    </main>
+  `);
 }
 
 async function quizEditorPage(quizId) {
@@ -3252,6 +3473,8 @@ async function render() {
     else if (route === "/results") app.innerHTML = await resultsPage();
     else if (route === "/admin") app.innerHTML = await adminPage();
     else if (route.startsWith("/quiz/")) app.innerHTML = await quizTakePage(route.split("/")[2]);
+    else if (route === "/admin/news/new") app.innerHTML = await newsEditorPage("new");
+    else if (route.startsWith("/admin/news/")) app.innerHTML = await newsEditorPage(route.split("/")[3]);
     else if (route === "/admin/quizzes/new") app.innerHTML = await quizEditorPage("new");
     else if (route === "/admin/content/new") app.innerHTML = await contentEditorPage("new");
     else if (route.startsWith("/admin/content/")) app.innerHTML = await contentEditorPage(route.split("/")[3]);
@@ -3320,6 +3543,8 @@ function initPageMotion() {
     ".brand-copy > *",
     ".home-subject-panel",
     ".home-subject-card",
+    ".home-news-panel",
+    ".home-news-card",
     ".hero-search",
     ".home-dashboard > *",
     ".topic-search-panel",
@@ -3421,6 +3646,37 @@ async function handleDeleteContent(button) {
   }
 }
 
+async function handleDeleteNews(button) {
+  const newsId = button.dataset.newsId;
+  const title = button.dataset.deleteTitle || "ข่าวนี้";
+  if (!newsId) return;
+  const confirmed = window.confirm(`ต้องการลบข่าว "${title}" หรือไม่?\n\nนักเรียนจะไม่เห็นประกาศนี้อีก`);
+  if (!confirmed) return;
+
+  try {
+    await store.deleteNews(newsId);
+    history.pushState({}, "", "/admin");
+    state.route = "/admin";
+    state.message = "ลบข่าวแล้ว";
+    await render();
+  } catch (error) {
+    setMessage(error.message);
+  }
+}
+
+async function handleMarkNewsRead(button) {
+  const newsId = button.dataset.newsId;
+  if (!newsId) return;
+
+  try {
+    await store.markNewsRead(newsId);
+    state.message = "บันทึกว่าอ่านประกาศแล้ว";
+    await render();
+  } catch (error) {
+    setMessage(error.message);
+  }
+}
+
 function bindEvents() {
   app.querySelectorAll("[data-nav]").forEach((button) => {
     button.addEventListener("click", () => navigate(button.dataset.nav));
@@ -3449,6 +3705,14 @@ function bindEvents() {
 
   app.querySelectorAll('[data-action="delete-content"]').forEach((button) => {
     button.addEventListener("click", () => handleDeleteContent(button));
+  });
+
+  app.querySelectorAll('[data-action="delete-news"]').forEach((button) => {
+    button.addEventListener("click", () => handleDeleteNews(button));
+  });
+
+  app.querySelectorAll('[data-action="mark-news-read"]').forEach((button) => {
+    button.addEventListener("click", () => handleMarkNewsRead(button));
   });
 
   app.querySelectorAll("form").forEach((form) => {
@@ -3500,6 +3764,21 @@ function bindEvents() {
 
   app.querySelectorAll('[data-action="content-cover-image"]').forEach((input) => {
     input.addEventListener("change", handleContentCoverUpload);
+  });
+
+  app.querySelectorAll('[data-action="news-image"]').forEach((input) => {
+    input.addEventListener("change", handleNewsImageUpload);
+  });
+
+  app.querySelectorAll('[data-action="remove-news-image"]').forEach((button) => {
+    button.addEventListener("click", () => {
+      const form = button.closest("form");
+      const hidden = form?.querySelector('input[name="imageUrl"]');
+      const input = form?.querySelector('[data-action="news-image"]');
+      if (hidden) hidden.value = "";
+      if (input) input.value = "";
+      updateNewsPreview(form);
+    });
   });
 
   app.querySelectorAll('[data-action="cover-position-x"], [data-action="cover-position-y"]').forEach((input) => {
@@ -3554,7 +3833,11 @@ function bindEvents() {
         form.dataset.pendingCoverUrl = "";
         hideCoverCropWorkspace(form);
         updateContentCoverPreview(form);
-        updateCreatorPreview();
+  updateCreatorPreview();
+
+  app.querySelector('form[data-form="save-news"]')?.addEventListener("input", () => updateNewsPreview(app.querySelector('form[data-form="save-news"]')));
+  app.querySelector('form[data-form="save-news"]')?.addEventListener("change", () => updateNewsPreview(app.querySelector('form[data-form="save-news"]')));
+  updateNewsPreview(app.querySelector('form[data-form="save-news"]'));
         if (message) message.textContent = "ใช้ภาพปกที่ครอบแล้วเรียบร้อย";
       } catch {
         if (message) message.textContent = "ครอบภาพไม่สำเร็จ ลองอัปโหลดภาพใหม่";
@@ -3708,6 +3991,35 @@ function handleContentCoverUpload(event) {
     if (message) message.textContent = `${file.name} · ${(file.size / 1024).toFixed(0)} KB พร้อมใช้เป็นภาพปก`;
     updateContentCoverPreview(form);
     updateCreatorPreview();
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleNewsImageUpload(event) {
+  const input = event.currentTarget;
+  const file = input.files?.[0];
+  const form = input.closest("form");
+  const message = form?.querySelector("[data-news-image-message]");
+  if (!file || !form) return;
+
+  if (!file.type.startsWith("image/")) {
+    input.value = "";
+    if (message) message.textContent = "อัปโหลดได้เฉพาะไฟล์รูปภาพเท่านั้น";
+    return;
+  }
+
+  if (file.size > MAX_COVER_IMAGE_BYTES) {
+    input.value = "";
+    if (message) message.textContent = "ไฟล์ใหญ่เกิน 2 MB กรุณาย่อรูปก่อนอัปโหลด";
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    const hidden = form.querySelector('input[name="imageUrl"]');
+    if (hidden) hidden.value = String(reader.result || "");
+    if (message) message.textContent = `${file.name} · ${(file.size / 1024).toFixed(0)} KB พร้อมใช้เป็นรูปข่าว`;
+    updateNewsPreview(form);
   };
   reader.readAsDataURL(file);
 }
@@ -3969,6 +4281,66 @@ function updateQuizProgress() {
     }
     submit.disabled = answered < total;
     submit.textContent = answered < total ? "ตอบให้ครบก่อนรับ EXP" : "ส่งคำตอบและรับ EXP";
+  }
+}
+
+function collectNewsForm(form) {
+  const data = new FormData(form);
+  return {
+    id: data.get("id") || undefined,
+    title: data.get("title"),
+    summary: data.get("summary"),
+    body: data.get("body"),
+    imageUrl: data.get("imageUrl"),
+    audience: data.get("audience"),
+    priority: data.get("priority"),
+    status: data.get("status"),
+    actionLabel: data.get("actionLabel"),
+    actionUrl: data.get("actionUrl"),
+    publishedAt: data.get("publishedAt"),
+    createdAt: data.get("createdAt"),
+  };
+}
+
+function updateNewsPreview(form) {
+  if (!form) return;
+  const news = collectNewsForm(form);
+  const imagePreview = form.querySelector("[data-news-image-preview]");
+  if (imagePreview) {
+    imagePreview.classList.toggle("has-image", Boolean(news.imageUrl));
+    imagePreview.innerHTML = news.imageUrl
+      ? `<img src="${escapeHtml(news.imageUrl)}" alt="" /><button type="button" data-action="remove-news-image">ลบรูปข่าว</button>`
+      : `<span>ยังไม่มีรูปข่าว</span>`;
+    imagePreview.querySelector('[data-action="remove-news-image"]')?.addEventListener("click", () => {
+      const hidden = form.querySelector('input[name="imageUrl"]');
+      const input = form.querySelector('[data-action="news-image"]');
+      if (hidden) hidden.value = "";
+      if (input) input.value = "";
+      updateNewsPreview(form);
+    });
+  }
+
+  const preview = form.querySelector(".news-preview-card");
+  if (preview) {
+    preview.innerHTML = renderHomeNewsCard({
+      ...news,
+      title: news.title?.toString().trim() || "หัวข้อข่าวจะแสดงตรงนี้",
+      summary: news.summary?.toString().trim() || "Short description จะช่วยให้นักเรียนเข้าใจข่าวแบบเร็ว ๆ",
+      body: news.body?.toString().trim() || "รายละเอียดแบบยาวจะแสดงในระบบข่าวเมื่อเปิดดูเต็ม",
+      createdAt: new Date().toISOString(),
+      publishedAt: news.status === "published" ? new Date().toISOString() : "",
+    });
+  }
+
+  const errors = news.status === "published" ? validateNewsDraft(news) : [];
+  const readinessOutput = form.querySelector(".news-readiness-output");
+  const submit = form.querySelector('button[type="submit"]');
+  if (readinessOutput) {
+    readinessOutput.innerHTML = errors.length ? `<ul class="readiness-list">${errors.map((error) => `<li>${escapeHtml(error)}</li>`).join("")}</ul>` : "";
+  }
+  if (submit) {
+    submit.disabled = Boolean(errors.length);
+    submit.textContent = news.status === "published" ? (errors.length ? "แก้ฉบับร่างก่อนเผยแพร่" : "เผยแพร่ข่าว") : "บันทึกฉบับร่าง";
   }
 }
 
@@ -4238,6 +4610,17 @@ async function handleSubmit(event) {
       state.route = `/subject/${content.subject}`;
       state.message = "บันทึกสื่อแล้ว";
       state.lastResult = null;
+      await render();
+    }
+
+    if (formType === "save-news") {
+      const news = collectNewsForm(form);
+      const errors = news.status === "published" ? validateNewsDraft(news) : [];
+      if (errors.length) throw new Error(errors.join(" · "));
+      const saved = await store.saveNews(news);
+      history.pushState({}, "", `/admin/news/${saved.id}/edit`);
+      state.route = `/admin/news/${saved.id}/edit`;
+      state.message = "บันทึกข่าวแล้ว";
       await render();
     }
   } catch (error) {

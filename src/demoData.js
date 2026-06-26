@@ -1,3 +1,36 @@
+export const DEMO_NEWS = [
+  {
+    id: "news-roadshow-kit",
+    title: "เปิดชุด Exercise ใหม่สำหรับกิจกรรม Roadshow",
+    summary: "ทีม Creator เพิ่ม Exercise ที่รวมไฟล์ Drive และควิซไว้กับคลิปเดียวกันแล้ว",
+    body:
+      "ตอนนี้นักเรียนสามารถเข้าแท็บ Exercise ในแต่ละวิชาเพื่อเปิดไฟล์ worksheet จาก Drive และทำควิซที่ผูกกับคลิปนั้นได้ในที่เดียว เหมาะสำหรับใช้หลังดูคลิปหรือระหว่างกิจกรรมในห้องเรียน",
+    imageUrl: "",
+    audience: "all",
+    priority: "high",
+    status: "published",
+    actionLabel: "ไปดู Exercise",
+    actionUrl: "/subject/biology?type=exercise",
+    publishedAt: "2026-06-24T00:00:00.000Z",
+    createdAt: "2026-06-24T00:00:00.000Z",
+  },
+  {
+    id: "news-giveaway-unseen",
+    title: "Give Away&Unseen เปิดให้นักเรียนล็อกอินเพื่อรับไฟล์",
+    summary: "ไฟล์แจกและ unseen material จะเปิดได้หลังเข้าสู่ระบบเท่านั้น",
+    body:
+      "เพื่อให้ทีมติดตามการใช้งานและป้องกันลิงก์หลุดนอกระบบ ปุ่มเปิดไฟล์และ Google Drive ใน Give Away&Unseen จะพาไปหน้าเข้าสู่ระบบก่อน นักเรียนที่ล็อกอินแล้วสามารถเปิดไฟล์ได้ตามปกติ",
+    imageUrl: "",
+    audience: "student",
+    priority: "normal",
+    status: "published",
+    actionLabel: "ดู Give Away&Unseen",
+    actionUrl: "/subject/physics?type=file",
+    publishedAt: "2026-06-23T00:00:00.000Z",
+    createdAt: "2026-06-23T00:00:00.000Z",
+  },
+];
+
 export const DEMO_QUIZZES = [
   {
     id: "demo-osmosis",

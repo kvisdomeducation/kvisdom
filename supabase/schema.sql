@@ -85,6 +85,30 @@ create table public.answers (
   points_earned integer not null default 0
 );
 
+create table public.news_items (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  summary text not null,
+  body text not null,
+  image_url text,
+  audience text not null default 'all' check (audience in ('all', 'student', 'creator')),
+  priority text not null default 'normal' check (priority in ('normal', 'high')),
+  status public.quiz_status not null default 'draft',
+  action_label text,
+  action_url text,
+  published_at timestamptz,
+  created_by uuid references public.profiles(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table public.news_reads (
+  news_id uuid not null references public.news_items(id) on delete cascade,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  read_at timestamptz not null default now(),
+  primary key (news_id, user_id)
+);
+
 alter table public.profiles enable row level security;
 alter table public.quizzes enable row level security;
 alter table public.questions enable row level security;
@@ -92,6 +116,8 @@ alter table public.choices enable row level security;
 alter table public.attempts enable row level security;
 alter table public.answers enable row level security;
 alter table public.content_items enable row level security;
+alter table public.news_items enable row level security;
+alter table public.news_reads enable row level security;
 
 create policy "profiles are readable by signed in users"
   on public.profiles for select
@@ -212,3 +238,33 @@ create policy "admins manage content"
   to authenticated
   using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
   with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'));
+
+create policy "published news is public"
+  on public.news_items for select
+  to anon, authenticated
+  using (
+    status = 'published'
+    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+  );
+
+create policy "admins manage news"
+  on public.news_items for all
+  to authenticated
+  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+  with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'));
+
+create policy "users read own news receipts"
+  on public.news_reads for select
+  to authenticated
+  using (user_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'));
+
+create policy "users mark own news receipts"
+  on public.news_reads for insert
+  to authenticated
+  with check (user_id = auth.uid());
+
+create policy "users update own news receipts"
+  on public.news_reads for update
+  to authenticated
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());

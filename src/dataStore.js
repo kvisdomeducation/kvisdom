@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { DEMO_CONTENT, DEMO_QUIZZES } from "./demoData.js";
+import { DEMO_CONTENT, DEMO_NEWS, DEMO_QUIZZES } from "./demoData.js";
 import { scoreQuiz, validateContentDraft } from "./quizLogic.js";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -18,6 +18,21 @@ function readLocalState() {
     );
     const demoAdmin = state.users?.find((user) => user.id === "demo-admin" || ["admin@local", "admin@kvisdom.local"].includes(user.email));
     let changed = false;
+    if (!state.news) {
+      state.news = DEMO_NEWS;
+      changed = true;
+    }
+    if (!state.newsReads) {
+      state.newsReads = {};
+      changed = true;
+    }
+    const newsById = new Map((state.news || []).map((item) => [item.id, item]));
+    DEMO_NEWS.forEach((item) => {
+      if (!newsById.has(item.id)) {
+        state.news.unshift(item);
+        changed = true;
+      }
+    });
     if (demoStudent && demoStudent.role !== "student") {
       demoStudent.role = "student";
       changed = true;
@@ -83,6 +98,8 @@ function readLocalState() {
     ],
     quizzes: DEMO_QUIZZES,
     content: DEMO_CONTENT,
+    news: DEMO_NEWS,
+    newsReads: {},
     attempts: [],
   };
   localStorage.setItem(storageKey, JSON.stringify(initial));
@@ -144,6 +161,30 @@ function normalizeSupabaseContent(row) {
     status: row.status,
     createdAt: row.created_at,
   };
+}
+
+function normalizeSupabaseNews(row) {
+  return {
+    id: row.id,
+    title: row.title,
+    summary: row.summary || "",
+    body: row.body || "",
+    imageUrl: row.image_url || "",
+    audience: row.audience || "all",
+    priority: row.priority || "normal",
+    status: row.status,
+    actionLabel: row.action_label || "",
+    actionUrl: row.action_url || "",
+    publishedAt: row.published_at || row.created_at,
+    createdAt: row.created_at,
+  };
+}
+
+function canReadNewsItem(item, user) {
+  if (!item) return false;
+  if (item.status !== "published" && user?.role !== "admin") return false;
+  if (user?.role === "admin") return true;
+  return item.audience === "all" || item.audience === "student";
 }
 
 async function ensureSupabaseProfile(authUser) {
@@ -624,6 +665,144 @@ export const store = {
     const state = readLocalState();
     state.content = (state.content || []).filter((item) => item.id !== contentId);
     state.deletedContentIds = Array.from(new Set([...(state.deletedContentIds || []), contentId]));
+    writeLocalState(state);
+  },
+
+  async listNews({ includeDrafts = false } = {}) {
+    const user = await this.getCurrentUser();
+    if (supabase) {
+      let query = supabase.from("news_items").select("*").order("published_at", { ascending: false }).order("created_at", { ascending: false });
+      if (!includeDrafts) query = query.eq("status", "published");
+      const { data, error } = await query;
+      if (error) {
+        if (["42P01", "PGRST205"].includes(error.code)) return [];
+        throw error;
+      }
+      return data.map(normalizeSupabaseNews).filter((item) => includeDrafts || canReadNewsItem(item, user));
+    }
+
+    const state = readLocalState();
+    if (!state.news) state.news = DEMO_NEWS;
+    if (!state.newsReads) state.newsReads = {};
+    writeLocalState(state);
+    return state.news
+      .filter((item) => includeDrafts || canReadNewsItem(item, user))
+      .sort((a, b) => new Date(b.publishedAt || b.createdAt) - new Date(a.publishedAt || a.createdAt));
+  },
+
+  async getNews(newsId) {
+    const user = await this.getCurrentUser();
+    if (supabase) {
+      const { data, error } = await supabase.from("news_items").select("*").eq("id", newsId).maybeSingle();
+      if (error) {
+        if (["42P01", "PGRST205"].includes(error.code)) return null;
+        throw error;
+      }
+      const item = data ? normalizeSupabaseNews(data) : null;
+      return canReadNewsItem(item, user) ? item : null;
+    }
+
+    const state = readLocalState();
+    if (!state.news) state.news = DEMO_NEWS;
+    const item = state.news.find((candidate) => candidate.id === newsId) || null;
+    return canReadNewsItem(item, user) ? item : null;
+  },
+
+  async getUnreadNewsCount() {
+    const user = await this.getCurrentUser();
+    if (!user) return 0;
+    const items = await this.listNews();
+    if (supabase) {
+      const { data, error } = await supabase.from("news_reads").select("news_id").eq("user_id", user.id);
+      if (error) return 0;
+      const readIds = new Set((data || []).map((row) => row.news_id));
+      return items.filter((item) => !readIds.has(item.id)).length;
+    }
+
+    const state = readLocalState();
+    const readIds = new Set(state.newsReads?.[user.id] || []);
+    return items.filter((item) => !readIds.has(item.id)).length;
+  },
+
+  async markNewsRead(newsId) {
+    const user = await this.getCurrentUser();
+    if (!user) return;
+    if (supabase) {
+      const { error } = await supabase.from("news_reads").upsert({ news_id: newsId, user_id: user.id, read_at: new Date().toISOString() });
+      if (error && !["42P01", "PGRST205"].includes(error.code)) throw error;
+      return;
+    }
+
+    const state = readLocalState();
+    state.newsReads = state.newsReads || {};
+    state.newsReads[user.id] = Array.from(new Set([...(state.newsReads[user.id] || []), newsId]));
+    writeLocalState(state);
+  },
+
+  async saveNews(newsDraft) {
+    const user = await this.getCurrentUser();
+    if (!user || user.role !== "admin") throw new Error("ต้องเป็นแอดมินก่อน");
+    const now = new Date().toISOString();
+    const saved = {
+      id: newsDraft.id || crypto.randomUUID(),
+      title: newsDraft.title,
+      summary: newsDraft.summary,
+      body: newsDraft.body,
+      imageUrl: newsDraft.imageUrl || "",
+      audience: newsDraft.audience || "all",
+      priority: newsDraft.priority || "normal",
+      status: newsDraft.status || "draft",
+      actionLabel: newsDraft.actionLabel || "",
+      actionUrl: newsDraft.actionUrl || "",
+      publishedAt: newsDraft.status === "published" ? newsDraft.publishedAt || now : newsDraft.publishedAt || "",
+      createdAt: newsDraft.createdAt || now,
+    };
+    if (saved.status === "published" && (!saved.title?.trim() || !saved.summary?.trim() || !saved.body?.trim())) {
+      throw new Error("ข่าวที่เผยแพร่ต้องมีหัวข้อ สรุป และรายละเอียด");
+    }
+
+    if (supabase) {
+      const payload = {
+        id: saved.id,
+        title: saved.title,
+        summary: saved.summary,
+        body: saved.body,
+        image_url: saved.imageUrl,
+        audience: saved.audience,
+        priority: saved.priority,
+        status: saved.status,
+        action_label: saved.actionLabel,
+        action_url: saved.actionUrl,
+        published_at: saved.publishedAt || null,
+        created_by: user.id,
+      };
+      const { error } = await supabase.from("news_items").upsert(payload);
+      if (error) throw error;
+      return saved;
+    }
+
+    const state = readLocalState();
+    state.news = state.news || DEMO_NEWS;
+    const existingIndex = state.news.findIndex((item) => item.id === saved.id);
+    if (existingIndex >= 0) state.news[existingIndex] = saved;
+    else state.news.unshift(saved);
+    writeLocalState(state);
+    return saved;
+  },
+
+  async deleteNews(newsId) {
+    const user = await this.getCurrentUser();
+    if (!user || user.role !== "admin") throw new Error("ต้องเป็นแอดมินก่อน");
+    if (supabase) {
+      const { error } = await supabase.from("news_items").delete().eq("id", newsId);
+      if (error) throw error;
+      return;
+    }
+    const state = readLocalState();
+    state.news = (state.news || []).filter((item) => item.id !== newsId);
+    Object.keys(state.newsReads || {}).forEach((userId) => {
+      state.newsReads[userId] = state.newsReads[userId].filter((id) => id !== newsId);
+    });
     writeLocalState(state);
   },
 
